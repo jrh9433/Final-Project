@@ -19,6 +19,21 @@ public class MessageServer extends JFrame implements GUIResource {
      * Main text output area
      */
     private final JTextArea jtaLog = new JTextArea();
+    
+    /**
+     * Password used to validate secure client connection
+     */
+    private static final String PASSWORD = "ISTE121"; 
+    
+    /**
+     * Output stream writer
+     */
+    private ObjectOutputStream oos = null;
+    
+    /**
+     * Input stream reader
+     */
+    private ObjectInputStream ois = null;
 
     /**
      * Reference to server thread
@@ -202,15 +217,33 @@ public class MessageServer extends JFrame implements GUIResource {
 
                 try {
                     clientSocket = listenerSocket.accept();
+                    oos = new ObjectOutputStream(clientSocket.getOutputStream());
+                    ois = new ObjectInputStream(clientSocket.getInputStream());
                 } catch (IOException ex) {
                     logln("Connection blocked " + ex);
                     return;
                 }
-
-                // spin up a client thread for the newly connected client
-                SharedWorkerThread client = new SharedWorkerThread(clientSocket, mainInstance);
-                connectedClients.add(client);
-                client.start();
+                
+                String clientInfo = clientSocket.getInetAddress().getHostName();
+                
+                try {
+                  if(ois.readObject() instanceof String && ois.readObject().equals(PASSWORD)) { 
+                     jtaLog.append("Client " + clientInfo + " connected!\n");
+                     // spin up a client thread for the newly connected client
+                     SharedWorkerThread client = new SharedWorkerThread(clientSocket, mainInstance);
+                     connectedClients.add(client);
+                     client.start();
+                  }else {
+                     oos.writeObject("Invalid password");
+                     jtaLog.append("Client failed to connect - invalid password\n");
+                  }
+                  
+                }catch(EOFException eofe) {
+                   return;
+                }catch(Exception e) {
+                   jtaLog.append("Exception " + e +"\n");
+                   e.printStackTrace();
+                }
             }
         }
     }
