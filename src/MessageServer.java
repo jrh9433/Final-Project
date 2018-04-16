@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -11,25 +12,40 @@ import java.util.*;
 public class MessageServer extends JFrame implements GUIResource {
 
     /**
+     * Default password to use when creating users
+     */
+    private static final String DEFAULT_PASSWORD = "ISTE121";
+
+    /**
+     * Default data save path
+     */
+    private static final String SAVED_USER_DATA_PATH = "./saved-user-data.bin";
+
+    /**
      * Starts the server
      */
     private final JButton jbStart = new JButton("Start");
 
     /**
+     * Creates new users
+     */
+    private final JButton jbAddUser = new JButton("Add User");
+
+    /**
      * Main text output area
      */
     private final JTextArea jtaLog = new JTextArea();
-    
+
     /**
-     * Password used to validate secure client connection
+     * Manages users, passwords, and their data
      */
-    private static final String PASSWORD = "ISTE121"; 
-    
+    private final UserManager userManager = new UserManager(this);
+
     /**
      * Output stream writer
      */
     private ObjectOutputStream oos = null;
-    
+
     /**
      * Input stream reader
      */
@@ -48,13 +64,25 @@ public class MessageServer extends JFrame implements GUIResource {
         this.setSize(600, 300);
         this.setMinimumSize(new Dimension(450, 175));
         this.setLocation(800, 100);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setResizable(true);
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (serverThread != null) {
+                    serverThread.stopListening();
+                }
+
+                userManager.writeUserData(SAVED_USER_DATA_PATH);
+            }
+        });
 
         // start stop button
         jbStart.addActionListener(l -> onStartClicked());
         JPanel jpTopBar = new JPanel();
         jpTopBar.add(jbStart);
+        jbAddUser.addActionListener(l -> onAddUserClicked());
+        jpTopBar.add(jbAddUser);
 
         // output handling
         DefaultCaret caret = (DefaultCaret) jtaLog.getCaret();
@@ -65,6 +93,9 @@ public class MessageServer extends JFrame implements GUIResource {
 
         this.add(jpTopBar, BorderLayout.NORTH);
         this.add(new JScrollPane(jtaLog), BorderLayout.CENTER);
+
+        // load saved data
+        userManager.loadSavedUserData(SAVED_USER_DATA_PATH);
         this.setVisible(true);
     }
 
@@ -103,6 +134,13 @@ public class MessageServer extends JFrame implements GUIResource {
     }
 
     /**
+     * Called when the Add User button is clicked
+     */
+    private void onAddUserClicked() {
+        new AddUserDialog(this);
+    }
+
+    /**
      * Logs specified message with a newline character
      *
      * @param str message to log
@@ -116,6 +154,11 @@ public class MessageServer extends JFrame implements GUIResource {
     @Override
     public boolean isServer() {
         return true;
+    }
+
+    @Override
+    public void processLoginResponse(boolean wasSuccess) {
+        // do nothing, server does not process login responses
     }
 
     /**
@@ -223,28 +266,124 @@ public class MessageServer extends JFrame implements GUIResource {
                     logln("Connection blocked " + ex);
                     return;
                 }
-                
+
                 String clientInfo = clientSocket.getInetAddress().getHostName();
-                
+
                 try {
-                  if(ois.readObject() instanceof String && ois.readObject().equals(PASSWORD)) { 
-                     jtaLog.append("Client " + clientInfo + " connected!\n");
-                     // spin up a client thread for the newly connected client
-                     SharedWorkerThread client = new SharedWorkerThread(clientSocket, mainInstance);
-                     connectedClients.add(client);
-                     client.start();
-                  }else {
-                     oos.writeObject("Invalid password");
-                     jtaLog.append("Client failed to connect - invalid password\n");
-                  }
-                  
-                }catch(EOFException eofe) {
-                   return;
-                }catch(Exception e) {
-                   jtaLog.append("Exception " + e +"\n");
-                   e.printStackTrace();
+                    // read username and password immediately
+                    Object expectedUsername = ois.readObject();
+                    Object expectedUserPass = ois.readObject();
+
+                    if (!(expectedUsername instanceof String && expectedUserPass instanceof String)) {
+                        logln("Expected login information; got \"" + String.valueOf(expectedUsername) + "\":\"" + String.valueOf(expectedUserPass) + "\"");
+                        continue;
+                    }
+
+                    String userName = (String) expectedUsername;
+                    String password = (String) expectedUserPass;
+
+                    // check user information against user store
+                    if (userManager.isValidLogin(userName, password)) {
+                        oos.writeObject(ProtocolConstants.LOGIN_SUCCESS);
+                        logln(clientInfo + " connected as " + userName);
+
+                        // spin up a client thread for the newly connected client
+                        SharedWorkerThread client = new SharedWorkerThread(clientSocket, mainInstance, ois, oos);
+                        connectedClients.add(client);
+                        client.start();
+                    } else {
+                        // notify remote login failed and clean up
+                        oos.writeObject(ProtocolConstants.LOGIN_REJECTED);
+                        logln(clientInfo + " failed to connect as " + userName + " - Invalid username/password combo");
+
+                        ois.close();
+                        oos.close();
+                        clientSocket.close();
+                    }
+                } catch (EOFException ignored) {
+                    continue;
+                } catch (IOException | ClassNotFoundException e) {
+                    logln("Exception " + e);
+                    e.printStackTrace();
                 }
             }
+        }
+    }
+
+    /**
+     * Dialog used to add users to the server user manager
+     */
+    class AddUserDialog extends JDialog {
+        /**
+         * Username for the new user
+         */
+        private final JTextField jtfUser = new JTextField(10);
+
+        /**
+         * Password for the new user
+         */
+        private final JTextField jtfPass = new JPasswordField(10);
+
+        /**
+         * Adds the user to the server
+         */
+        private final JButton jbAdd = new JButton("Add");
+
+        /**
+         * Cancels the operation
+         */
+        private final JButton jbCancel = new JButton("Cancel");
+
+        public AddUserDialog(MessageServer parent) {
+            super(parent, "Add User", true);
+            this.setSize(250, 150);
+            this.setLocation(getCenteredPosition(parent, this));
+
+            JPanel body = new JPanel(new GridLayout(0, 1));
+            JPanel username = new JPanel();
+            username.add(new JLabel("Username: "));
+            username.add(jtfUser);
+
+            JPanel password = new JPanel();
+            jtfPass.setText(DEFAULT_PASSWORD);
+            password.add(new JLabel("Password: "));
+            password.add(jtfPass);
+
+            JPanel buttons = new JPanel();
+            jbAdd.addActionListener(l -> onAdd());
+            jbCancel.addActionListener(l -> onCancel());
+
+            buttons.add(jbAdd);
+            buttons.add(jbCancel);
+
+            body.add(username);
+            body.add(password);
+            body.add(buttons);
+            this.add(body, BorderLayout.CENTER);
+            this.setVisible(true);
+        }
+
+        /**
+         * Called when the add button is clicked
+         */
+        private void onAdd() {
+            String username = jtfUser.getText();
+            String pass = jtfPass.getText();
+
+            if (username == null || username.equals("") || pass == null || pass.equals("")) {
+                return;
+            }
+
+            userManager.addNewUser(username, pass);
+            logln("Added user: " + username);
+            this.dispose();
+        }
+
+        /**
+         * Called when the cancel button is clicked
+         */
+        private void onCancel() {
+            this.dispose();
         }
     }
 }

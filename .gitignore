@@ -220,3 +220,6 @@ $RECYCLE.BIN/
 
 
 # End of https://www.gitignore.io/api/vim,java,linux,macos,windows,eclipse,intellij+all
+
+### Application Data ###
+saved-user-data.bin

@@ -1,4 +1,5 @@
 import javax.swing.*;
+import java.awt.*;
 
 /**
  * Interface for accessing common elements from the shared
@@ -39,4 +40,40 @@ public interface GUIResource {
      * @return True, if server
      */
     boolean isServer();
+
+    /**
+     * Process a login reply from the SharedWorkerThread.
+     * <p>
+     * Thread safe, can be called directly from the worker.
+     *
+     * @param wasSuccess True, if login was successful
+     */
+    void processLoginResponse(boolean wasSuccess);
+
+    /**
+     * Gets the location that will position the specified dialog window at the
+     * center of the specified parent window.
+     * <p>
+     * This is not the same thing as the actual center of the parent window.
+     *
+     * @param parent   Parent window to center on
+     * @param toCenter Dialog to center
+     * @return Point that will result in the dialog being centered
+     */
+    default Point getCenteredPosition(JFrame parent, JDialog toCenter) {
+        double parentHeight = parent.getSize().getHeight();
+        double parentWidth = parent.getSize().getWidth();
+        double parentX = parent.getLocation().getX();
+        double parentY = parent.getLocation().getY();
+
+        // account for entirety of parent window size
+        int targetX = (int) (parentX + parentWidth) / 2;
+        int targetY = (int) (parentY + parentHeight) / 2;
+
+        // account for this login window's size
+        targetX -= toCenter.getSize().width / 2;
+        targetY -= toCenter.getSize().height / 2;
+
+        return new Point(targetX, targetY);
+    }
 }

@@ -65,17 +65,28 @@ public class SharedWorkerThread extends Thread {
      * Creates a new SharedWorkerThread
      *
      * @param remoteSocket Socket connecting us to the remote
-     * @param guiClient Instance of a client
+     * @param guiClient    Instance of a client
      */
     public SharedWorkerThread(Socket remoteSocket, GUIResource guiClient) {
-        if (!remoteSocket.isConnected()) {
-            // throw a tantrum
-            throw new IllegalArgumentException("Cannot pass an already closed socket!");
-        }
-
+        super("Shared Worker Thread : " + (guiClient.isServer() ? "Server" : "Client"));
         this.guiClient = guiClient;
         this.isServer = guiClient.isServer();
         this.remoteSocket = remoteSocket;
+    }
+
+    /**
+     * Creates a new SharedWorkerThread
+     *
+     * @param remoteSocket Socket connecting us to the remote
+     * @param guiClient    Instance of a client
+     * @param inputStream  ObjectInputStream to communicate over
+     * @param outputStream ObjectOutputStream to communicate over
+     */
+    public SharedWorkerThread(Socket remoteSocket, GUIResource guiClient, ObjectInputStream inputStream, ObjectOutputStream outputStream) {
+        this(remoteSocket, guiClient);
+
+        this.streamIn = inputStream;
+        this.streamOut = outputStream;
     }
 
     /**
@@ -105,16 +116,25 @@ public class SharedWorkerThread extends Thread {
         guiClient.logln(msg);
     }
 
+    /**
+     * Stops the thread without side effects
+     */
+    public void haltThread() {
+        this.isConnected = false;
+    }
+
     @Override
     public void run() {
-        logln("Remote at " + remoteSocket.getInetAddress() + " has connected");
-
-        // init resources
         try {
-            streamOut = new ObjectOutputStream(remoteSocket.getOutputStream());
-            streamIn = new ObjectInputStream(remoteSocket.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
+            if (streamOut == null) {
+                streamOut = new ObjectOutputStream(remoteSocket.getOutputStream());
+            }
+
+            if (streamIn == null) {
+                streamIn = new ObjectInputStream(remoteSocket.getInputStream());
+            }
+        } catch (IOException ex) {
+            logln("Error initializing streams: " + ex);
             return;
         }
 
@@ -170,18 +190,19 @@ public class SharedWorkerThread extends Thread {
     /**
      * Attempts to authenticate the user with the server.
      * <p>
-     * When a response is received, the worker will update the login panel
+     * When a response is received, the worker will update the client
      *
      * @param username username to authenticate with
      * @param password password to authenticate with
-     * @param loginPanel instance of calling login panel
      */
-    public void authenticateAndCallBack(String username, String password, MessageClient.LoginPanel loginPanel) {
-        boolean wasSuccessful = true;
-
-        // todo - get through enough design-by-committee to agree on a login standard and implement
-
-        loginPanel.processLoginReply(wasSuccessful); // sync'd to GUI on other end
+    public void sendLoginInformation(String username, String password) {
+        try {
+            streamOut.writeObject(username);
+            streamOut.writeObject(password);
+        } catch (IOException ex) {
+            logln("Unable to send username and password: " + ex);
+            guiClient.showMessageDialog("Error sending login information: " + ex, "Connection Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**
@@ -190,8 +211,21 @@ public class SharedWorkerThread extends Thread {
      * @param incomingObj Object to process
      */
     private void processIncomingData(Object incomingObj) {
-        // todo - determine object type, process from there
-        logln("Received " + String.valueOf(incomingObj));
+        if (incomingObj instanceof String) {
+            String incoming = (String) incomingObj;
+
+            if (incoming.equals(ProtocolConstants.LOGIN_SUCCESS)) {
+                guiClient.processLoginResponse(true);
+            } else if (incoming.equals(ProtocolConstants.LOGIN_REJECTED)) {
+                guiClient.processLoginResponse(false);
+            } else {
+                logln("Recieved unknown message: " + incoming);
+            }
+
+            return;
+        }
+
+        logln("Received unknown object: " + String.valueOf(incomingObj));
     }
 
     /**
@@ -257,6 +291,7 @@ public class SharedWorkerThread extends Thread {
          * @param parentWorkerThread instance of SharedWorkerThread responsible for this thread
          */
         private DataReceiveThread(SharedWorkerThread parentWorkerThread) {
+            super("Data Receive Thread");
             this.streamIn = parentWorkerThread.streamIn;
             this.parentWorker = parentWorkerThread;
         }
@@ -267,6 +302,8 @@ public class SharedWorkerThread extends Thread {
                 Object incomingObj;
                 try {
                     incomingObj = streamIn.readObject(); // blocking
+                } catch (EOFException | SocketException ignored) {
+                    return; // expected on terminate
                 } catch (IOException e) {
                     logln("Exception reading incoming data! " + e);
                     e.printStackTrace();
