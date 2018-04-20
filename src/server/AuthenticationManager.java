@@ -1,11 +1,16 @@
+package server;
+
+import common.GUIResource;
+
 import java.io.*;
 import java.security.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Manages user login information and data
+ * Manages user login information
  */
-public class UserManager {
+public class AuthenticationManager {
 
     /**
      * All managed users
@@ -18,11 +23,11 @@ public class UserManager {
     private final GUIResource gui;
 
     /**
-     * Constructs a new instance of the UserManager
+     * Constructs a new instance of the auth manager
      *
      * @param guiResource instance of the server
      */
-    public UserManager(GUIResource guiResource) {
+    public AuthenticationManager(GUIResource guiResource) {
         this.gui = guiResource;
 
         // verify both our security algorithms exist immediately
@@ -64,6 +69,7 @@ public class UserManager {
             while (streamIn.available() > 0) {
                 User user = User.readFromStream(streamIn);
                 managedUsers.put(user.username, user);
+                gui.logln("Loaded saved user: " + user.username);
             }
         } catch (IOException ex) {
             gui.logln("Error reading saved user data: " + ex);
@@ -92,7 +98,7 @@ public class UserManager {
     }
 
     /**
-     * Adds a new user to the UserManager
+     * Adds a new user to the auth manager
      *
      * @param username      name to identify the user as
      * @param plainTextPass password to use to authenticate

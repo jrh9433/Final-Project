@@ -1,3 +1,7 @@
+package common;
+
+import common.message.MailMessage;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -19,11 +23,6 @@ public interface GUIResource {
     void showMessageDialog(String message, String title, int type);
 
     /**
-     * Notifies the implementing GUI that the network thread has disconnected
-     */
-    void updateForDisconnect();
-
-    /**
      * Logs a message to the implementation
      *
      * @param msg Message to write
@@ -42,13 +41,25 @@ public interface GUIResource {
     boolean isServer();
 
     /**
-     * Process a login reply from the SharedWorkerThread.
-     * <p>
-     * Thread safe, can be called directly from the worker.
-     *
-     * @param wasSuccess True, if login was successful
+     * Called when the server sends a new message to the client. Use to update GUIs.
      */
-    void processLoginResponse(boolean wasSuccess);
+    default void onMailReceived(MailMessage mail) {
+        logln(mail.toString());
+    }
+
+    /**
+     * Called when a message is received by the server, to be sent elsewhere
+     *
+     * @param mail mail to send
+     */
+    default void onOutgoingMail(MailMessage mail) {
+    }
+
+    /**
+     * Notifies the implementing GUI that the network thread has disconnected
+     */
+    default void updateForDisconnect() {
+    }
 
     /**
      * Gets the location that will position the specified dialog window at the
