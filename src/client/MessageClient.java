@@ -172,7 +172,7 @@ public class MessageClient extends JFrame implements GUIResource {
         jtfAttemptStatus.setVisible(false);
           
         if(fromField.isEmpty() || subjectField.isEmpty() || toField[0].isEmpty() || messageField.isEmpty()) {
-            jtfAttemptStatus.setVisible(true);
+            showMessageDialog("Please fill out all necessary fields!","Warning",2);
             return;
         }
         
@@ -192,10 +192,19 @@ public class MessageClient extends JFrame implements GUIResource {
             subjectField,
             messageField
         );
-        
+        doClearCompose();
+        showMessageDialog("Your mail has been sent to the server!","Message Sent",1);
         workerThread.submitTask(() -> workerThread.sendOutgoingMessage(message));
 
     }
+    
+    private void doClearCompose() {
+        jtfFrom.setText("");
+        jtfTo.setText("");
+        jtfCc.setText("");
+        jtfSubject.setText("");
+        jtaMessage.setText("");
+    }  
 
     /**
      * Called when the client chooses to log out from the server
@@ -207,7 +216,8 @@ public class MessageClient extends JFrame implements GUIResource {
         workerThread.submitTask(() -> workerThread.notifyRemoteToDisconnect());
         workerThread.submitTask(() -> workerThread.disconnect());
         workerThread = null;
-
+        
+        doClearCompose();
         updateForDisconnect();
     }
 
