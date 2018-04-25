@@ -11,7 +11,7 @@ public class ProtocolConstants {
     /**
      * Port that the server listens on
      */
-    public static final int SERVER_DEFAULT_LISTEN_PORT = 25;
+    public static final int SERVER_DEFAULT_LISTEN_PORT = 42069; // supposed to be 25, changed for demo purposes
 
     /**
      * Character set to use for data transmission per SMTP standard
