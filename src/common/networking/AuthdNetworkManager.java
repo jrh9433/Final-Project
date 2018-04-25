@@ -24,7 +24,7 @@ public class AuthdNetworkManager extends NetworkManager {
      */
     public boolean attemptLogin(String username, String password) {
         NetworkUtils.sendMessage(guiClient, netOut, username);
-        NetworkUtils.sendMessages(guiClient, netOut, true, password); // flag obfuscates log to hide password
+        NetworkUtils.sendMessages(guiClient, netOut, false, password); // flag obfuscates log to hide password
 
         String response = netIn.nextLine();
         logln(response);
