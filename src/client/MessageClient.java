@@ -12,6 +12,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.Socket;
+import java.text.SimpleDateFormat;  
+import java.util.Date;  
 
 /**
  * Client init class
@@ -28,8 +30,28 @@ public class MessageClient extends JFrame implements GUIResource {
      */
     private String loggedInUser;
 
-    // todo - remove, for basic network testing only
-    private JButton demoButton = new JButton("Action");
+    /**
+     * Subject Components
+     */
+      // North
+    private JLabel jlFrom = new JLabel("From:                ");
+    private JTextField jtfFrom = new JTextField(20);
+    private JLabel jlTo = new JLabel("To:                    ");
+    private JTextField jtfTo = new JTextField(20);
+    private JLabel jlCc = new JLabel("Cc:                    ");
+    private JTextField jtfCc = new JTextField(20);
+    private JLabel jlSubject = new JLabel("Subject:             ");
+    private JTextField jtfSubject = new JTextField(20);
+      // Center
+    private JLabel jlMessage = new JLabel("Message:");
+    private JTextArea jtaMessage = new JTextArea(10, 35);
+    private JButton jbSend = new JButton("Send");
+    private JButton jbLogout = new JButton("Logout");
+    protected final JTextField jtfAttemptStatus = new JTextField("Please fill with valid entries");
+    private JCheckBox jcbEncrypt = new JCheckBox("Encrypt", false);
+    
+    private boolean doEncrypt = false;
+
 
     /**
      * Login dialog that pops-up and gets disposed and re-initialized
@@ -42,7 +64,7 @@ public class MessageClient extends JFrame implements GUIResource {
      */
     public MessageClient() {
         this.setTitle("Mail Client");
-        final Dimension defaultSize = new Dimension(550, 350);
+        final Dimension defaultSize = new Dimension(550, 475);
         this.setSize(defaultSize);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.addWindowListener(new WindowAdapter() {
@@ -53,13 +75,75 @@ public class MessageClient extends JFrame implements GUIResource {
                 }
             }
         });
+        JTabbedPane tabbedPane = new JTabbedPane();
+        
+        //tabbedPane.addTab("Inbox");
+        /**
+         * Compose Tab
+         */
+        JPanel jpFrom = new JPanel();
+        jpFrom.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpFrom.add(jlFrom);
+        jpFrom.add(jtfFrom);
 
+        JPanel jpTo = new JPanel();
+        jpTo.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpTo.add(jlTo);
+        jpTo.add(jtfTo);
+
+        JPanel jpCc = new JPanel();
+        jpCc.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpCc.add(jlCc);
+        jpCc.add(jtfCc);
+
+        JPanel jpSubject = new JPanel();
+        jpSubject.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpSubject.add(jlSubject);
+        jpSubject.add(jtfSubject);
+
+        JPanel jpMessage = new JPanel();
+        jpMessage.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpMessage.add(jlMessage);
+
+        JPanel jpSend = new JPanel();
+        jpSend.setLayout(new FlowLayout(FlowLayout.RIGHT));
+        jpSend.add(jtfAttemptStatus);
+        jpSend.add(jcbEncrypt);
+        jpSend.add(jbSend);
+        jpSend.add(jbLogout);
+
+        JPanel jpNorth = new JPanel(new GridLayout(5, 1));
+        jpNorth.add(jpFrom);
+        jpNorth.add(jpTo);
+        jpNorth.add(jpCc);
+        jpNorth.add(jpSubject);
+        jpNorth.add(jpMessage);
+
+        // CENTER ... Label + text area
+        JPanel jpCenter = new JPanel(new GridLayout(2, 1));
+        jtaMessage.setLineWrap(true);
+        jtaMessage.setWrapStyleWord(true);
+        jpCenter.add(new JScrollPane(jtaMessage));
+        jpCenter.add(jpSend);
+
+        JPanel jpCompose = new JPanel();
+        jpCompose.add(jpNorth);
+        jpCompose.add(jpCenter);
+        
+        tabbedPane.addTab("Compose", jpCompose);
         // todo - list of messages panel, reading panel
-
-        // todo - remove below 2 lines
-        demoButton.addActionListener(l -> demoOnClick());
-        this.add(demoButton);
-
+        
+        jtfAttemptStatus.setVisible(false); // hide until we have something to say
+        jtfAttemptStatus.setEditable(false);
+        
+        this.add(tabbedPane);
+        
+        jbLogout.setEnabled(false);
+        jbSend.setEnabled(false);  
+        jbSend.addActionListener(l ->ValidateAndSend());
+        jbLogout.addActionListener(l ->logout());
+        
+        this.add(tabbedPane);
         this.setVisible(true);
         updateForDisconnect(); // inits everything as we want it
     }
@@ -73,19 +157,44 @@ public class MessageClient extends JFrame implements GUIResource {
         new MessageClient();
     }
 
-    // todo - remove me, more demo garbage
-    private void demoOnClick() {
+    
+    private void ValidateAndSend() {
+        SimpleDateFormat sdfDate = new SimpleDateFormat("MM/dd/yyyy");  
+        Date date = new Date();
+        String currentDate = sdfDate.format(date);  
+        
+        String[] toField = jtfTo.getText().split(",");
+        String fromField = jtfFrom.getText();
+        String[] ccField = jtfCc.getText().split(",");
+        String subjectField = jtfSubject.getText();
+        String messageField = jtaMessage.getText();
+        
+        jtfAttemptStatus.setVisible(false);
+          
+        if(fromField.isEmpty() || subjectField.isEmpty() || toField[0].isEmpty() || messageField.isEmpty()) {
+            jtfAttemptStatus.setVisible(true);
+            return;
+        }
+        
+        if(jcbEncrypt.isSelected()) {
+            doEncrypt = true;
+        }
+        else {
+            doEncrypt = false;
+        }
+        
         MailMessage message = new MailMessage(
-                false,
-                new String[]{"to1@localhost", "to2@localhost"},
-                "from1@localhost",
-                new String[]{"cc1@localhost", "cc2@localhost"},
-                "2018-04-20",
-                "Hi there! " + counter++,
-                "Wow what an interesting day\nHow are you doing\nblah blahblah\nOkay thanks\n\nZach"
+            doEncrypt,
+            toField,
+            fromField,
+            ccField,
+            currentDate,
+            subjectField,
+            messageField
         );
-
+        
         workerThread.submitTask(() -> workerThread.sendOutgoingMessage(message));
+
     }
 
     /**
@@ -110,6 +219,8 @@ public class MessageClient extends JFrame implements GUIResource {
     private void onSuccessfulLogin(String userName) {
         this.loggedInUser = userName;
         this.setActionsEnabled(true);
+        jbSend.setEnabled(true);
+        jbLogout.setEnabled(true);
     }
 
     /**
@@ -118,7 +229,7 @@ public class MessageClient extends JFrame implements GUIResource {
      * @param enable Sets enabled state
      */
     private void setActionsEnabled(boolean enable) {
-        demoButton.setEnabled(enable);
+        //demoButton.setEnabled(enable);
     }
 
     @Override
@@ -131,6 +242,8 @@ public class MessageClient extends JFrame implements GUIResource {
         setActionsEnabled(false);
         this.loggedInUser = null;
         this.workerThread = null;
+        jbSend.setEnabled(false);
+        jbLogout.setEnabled(false);
         //clearAllMessages(); // todo - when reading and list panels are setup, clear them
 
         loginDialog = new LoginDialog(this);
