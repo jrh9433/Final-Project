@@ -117,10 +117,17 @@ public class NetworkManager {
         logln(nextLine); // don't re-read, DATA
         NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.END_DATA_WITH); // send 354
 
+        nextLine = netIn.nextLine(); // read in looking for encrypted header
+        boolean encrypted = false;
+        if (nextLine.contains(ProtocolConstants.ENCRYPTION_HEADER)) {
+            encrypted = true;
+            nextLine = netIn.nextLine(); // read in first line of actual content
+        }
+
         // content length is unknown to us
         List<String> messageContents = new ArrayList<>();
 
-        nextLine = netIn.nextLine(); // read in first line of content
+        logln(nextLine); // first line of content was read in by encrypted handling above
         while (!nextLine.equals(ProtocolConstants.DATA_TERMINATOR)) {
             logln(nextLine);
             messageContents.add(nextLine);
@@ -133,7 +140,7 @@ public class NetworkManager {
 
         NetworkUtils.sendMessage(guiClient, netOut, okay250);
 
-        return new SMTPMailMessage(smtpFrom, smptRecipients.toArray(new String[0]), messageContents.toArray(new String[0]));
+        return new SMTPMailMessage(encrypted, smtpFrom, smptRecipients.toArray(new String[0]), messageContents.toArray(new String[0]));
     }
 
     public void initConnections(boolean isServer) {

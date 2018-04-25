@@ -67,4 +67,10 @@ public class ProtocolConstants {
      * Mail body content data header
      */
     public static final String DATA_HEADER = "DATA";
+
+    /**
+     * Body header that appears directly after first DATA header notifying remote that
+     * the message is encrypted
+     */
+    public static final String ENCRYPTION_HEADER = "_ENCRYPTED_";
 }

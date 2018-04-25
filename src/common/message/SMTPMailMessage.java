@@ -23,8 +23,9 @@ public class SMTPMailMessage extends MailMessage {
      */
     private String[] smtpRecipients;
 
-    public SMTPMailMessage(String smtpFrom, String[] smtpRecipients, String[] messageContents) {
+    public SMTPMailMessage(boolean encrypted, String smtpFrom, String[] smtpRecipients, String[] messageContents) {
         super();
+        setEncrypted(encrypted);
         this.smtpFrom = smtpFrom;
         this.smtpRecipients = smtpRecipients;
 

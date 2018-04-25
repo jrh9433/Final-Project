@@ -136,8 +136,12 @@ public class NetworkUtils {
      */
     public static String[] formatMailContentsForSend(MailMessage mail) {
         List<String> dataContents = new ArrayList<>();
-        dataContents.add("From: " + mail.getSender());
+        // this is the body, so if we're encrypted add our header
+        if (mail.isEncrypted()) {
+            dataContents.add(ProtocolConstants.ENCRYPTION_HEADER);
+        }
 
+        dataContents.add("From: " + mail.getSender());
 
         // handle the "pretty" to field
         dataContents.add(formatArrayOfAddresses("To: ", mail.getTo()));
