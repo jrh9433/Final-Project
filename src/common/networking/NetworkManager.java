@@ -120,6 +120,7 @@ public class NetworkManager {
         nextLine = netIn.nextLine(); // read in looking for encrypted header
         boolean encrypted = false;
         if (nextLine.contains(ProtocolConstants.ENCRYPTION_HEADER)) {
+            logln(nextLine);
             encrypted = true;
             nextLine = netIn.nextLine(); // read in first line of actual content
         }

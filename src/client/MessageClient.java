@@ -192,9 +192,10 @@ public class MessageClient extends JFrame implements GUIResource {
             subjectField,
             messageField
         );
+
         doClearCompose();
-        showMessageDialog("Your mail has been sent to the server!","Message Sent",1);
         workerThread.submitTask(() -> workerThread.sendOutgoingMessage(message));
+        showMessageDialog("Your mail has been sent to the server!","Message Sent",1);
 
     }
     
