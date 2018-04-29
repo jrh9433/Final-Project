@@ -33,14 +33,6 @@ public class SharedWorkerThread extends Thread {
     private final Vector<Runnable> pendingTasks = new Vector<>();
 
     /**
-     * Separate data-receive thread
-     * <p>
-     * Because input blocks, a separate data-receive thread is employed so that
-     * this thread is free to send data and process other tasks.
-     */
-    private DataReceiveThread receiveThread;
-
-    /**
      * Loop control variable
      */
     private boolean isConnected = true;
@@ -103,23 +95,29 @@ public class SharedWorkerThread extends Thread {
     public void run() {
         initConnection();
 
-        // Because receiving data blocks, use a separate thread to receive data.
-        // That thread will then immediately turn around and submit that data
-        // back to this thread. This thread will handle processing them.
-        receiveThread = new DataReceiveThread(this);
-        receiveThread.start();
-
         while (isConnected) {
             // process pending tasks like sending out data, processing incoming data queued up from the
             // receive thread, etc
             processPendingTasks();
 
-            // sleep this thread for a bit so we aren't
-            // just pegging out the CPU and eating all its cycles
+            boolean hasNewData;
             try {
-                Thread.sleep(150); // 0.15 seconds
-            } catch (InterruptedException ignored) {
-                // fall through to continue
+                hasNewData = networkManager.hasNewData(); // async safe
+            } catch (IOException ex) {
+                logln("Unable to read from data stream!");
+                continue;
+            }
+
+            if (hasNewData) {
+                this.processIncomingData(networkManager.rawRead());
+            } else {
+                // sleep this thread for a bit so we aren't
+                // just pegging out the CPU and eating all its cycles
+                try {
+                    Thread.sleep(150); // 0.15 seconds
+                } catch (InterruptedException ignored) {
+                    // fall through to continue
+                }
             }
         }
     }
@@ -204,71 +202,5 @@ public class SharedWorkerThread extends Thread {
         }
 
         networkManager.sendOutgoingMessage(mail);
-    }
-
-    /**
-     * Separate thread to handle receiving data without blocking the main worker thread
-     */
-    class DataReceiveThread extends Thread {
-
-        /**
-         * Loop control variable
-         */
-        private boolean acceptIncoming = true;
-
-        /**
-         * Instance of the main AbstractWorkerThread that owns this receive thread
-         */
-        private SharedWorkerThread parentWorker;
-
-        /**
-         * Constructs a new DataReceiveThread
-         *
-         * @param parentWorkerThread instance of AbstractWorkerThread responsible for this thread
-         */
-        private DataReceiveThread(SharedWorkerThread parentWorkerThread) {
-            super("Data Receive Thread");
-            this.parentWorker = parentWorkerThread;
-        }
-
-        @Override
-        public void run() {
-            while (acceptIncoming) {
-                boolean hasNewData;
-
-                try {
-                    hasNewData = parentWorker.networkManager.hasNewData(); // async safe
-                } catch (IOException ex) {
-                    logln("Unable to read from data stream!");
-                    continue;
-                }
-
-                if (hasNewData) {
-                    // make sure we are still accepting data
-                    if (!acceptIncoming) {
-                        break;
-                    }
-
-                    submitTask(() -> parentWorker.processIncomingData(networkManager.rawRead())); // only read content in main worker thread
-                } else {
-                    try {
-                        Thread.sleep(250); // sleep thread for 0.25 sec
-                    } catch (InterruptedException ignored) {
-                        // just keep going
-                    }
-                    continue;
-                }
-            }
-        }
-
-        /**
-         * Instructs the thread to stop accepting incoming data and stop the loop
-         * <p>
-         * NOTE: because {@link Scanner#nextLine()} is blocking, this will not stop the thread immediately.
-         * It is acceptable to skip this call and just close the main socket directly.
-         */
-        public void stopAcceptingData() {
-            acceptIncoming = false;
-        }
     }
 }
