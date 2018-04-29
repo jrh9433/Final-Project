@@ -154,6 +154,11 @@ public class NetworkUtils {
 
         dataContents.addAll(Arrays.asList(mail.getMessage().split("\n")));
 
+        // encrypt as needed
+        if (mail.isEncrypted()) {
+            dataContents = caesarShift(dataContents, ProtocolConstants.CAESAR_SHIFT_AMOUNT);
+        }
+
         return dataContents.toArray(new String[0]);
     }
 
@@ -182,5 +187,47 @@ public class NetworkUtils {
         }
 
         return builder.toString();
+    }
+
+    /**
+     * Applies a Caesar Shift to the given list of strings.
+     * <p>
+     * To reverse the shift, subtract 26 by a given shift
+     *
+     * @param input List of strings to apply the shift to
+     * @param shift amount to shift a letter by
+     * @return a new List of shifted strings
+     */
+    public static List<String> caesarShift(List<String> input, int shift) {
+        List<String> out = new ArrayList<>();
+        StringBuilder strBuilder = new StringBuilder();
+
+        for (String str : input) {
+            // ignore the header, that needs to remain
+            if (str.equals(ProtocolConstants.ENCRYPTION_HEADER)) {
+                out.add(str); // add header
+                continue;
+            }
+
+            char c;
+            for (int i = 0; i < str.length(); i++) {
+                c = str.charAt(i);
+
+                if (Character.isLetter(c)) { // can only shift letters
+                    c = (char) (str.charAt(i) + shift);
+
+                    if ((Character.isLowerCase(str.charAt(i)) && c > 'z') || (Character.isUpperCase(str.charAt(i)) && c > 'Z')) {
+                        c = (char) (str.charAt(i) - (26 - shift));
+                    }
+                }
+
+                strBuilder.append(c);
+            }
+
+            out.add(strBuilder.toString()); // add shifted text to output
+            strBuilder.delete(0, strBuilder.length()); // clear builder for re-use
+        }
+
+        return out;
     }
 }

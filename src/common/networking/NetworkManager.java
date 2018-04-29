@@ -141,6 +141,12 @@ public class NetworkManager {
 
         NetworkUtils.sendMessage(guiClient, netOut, okay250);
 
+        // decrypt contents before passing around internally
+        if (encrypted) {
+            int reverseShift = 26 - ProtocolConstants.CAESAR_SHIFT_AMOUNT; // number of supported characters (26) minus our shift
+            messageContents = NetworkUtils.caesarShift(messageContents, reverseShift);
+        }
+
         return new SMTPMailMessage(encrypted, smtpFrom, smptRecipients.toArray(new String[0]), messageContents.toArray(new String[0]));
     }
 

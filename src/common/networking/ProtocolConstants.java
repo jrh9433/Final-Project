@@ -73,4 +73,9 @@ public class ProtocolConstants {
      * the message is encrypted
      */
     public static final String ENCRYPTION_HEADER = "_ENCRYPTED_";
+
+    /**
+     * Shift to use for the caesar shift encryption
+     */
+    public static final int CAESAR_SHIFT_AMOUNT = 13;
 }
