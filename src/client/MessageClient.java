@@ -52,7 +52,7 @@ public class MessageClient extends JFrame implements GUIResource {
     private JTextField jtfSubject = new JTextField(20);
     // Center
     private JLabel jlMessage = new JLabel("Message:");
-    private JTextArea jtaMessage = new JTextArea(10, 35);
+    private JTextArea jtaMessage = new JTextArea(11, 35);
     private JButton jbSend = new JButton("Send");
     private JButton jbLogout = new JButton("Logout");
     private JCheckBox jcbEncrypt = new JCheckBox("Encrypt", false);
@@ -65,10 +65,12 @@ public class MessageClient extends JFrame implements GUIResource {
     private JTextField jtfFromInbox = new JTextField(20);
     private JLabel jlToInbox = new JLabel("To:        ");
     private JTextField jtfToInbox = new JTextField(20);
+    private JLabel jlCcInbox = new JLabel("Cc:        ");
+    private JTextField jtfCcInbox = new JTextField(20);
     private JLabel jlSubjectInbox = new JLabel("Subject: ");
     private JTextField jtfSubjectInbox = new JTextField(20);
     private JLabel jlMessageInbox = new JLabel("Message: ");
-    private JTextArea jtaMessageInbox = new JTextArea(10, 35);
+    private JTextArea jtaMessageInbox = new JTextArea(8, 35);
     private JButton jbOpen = new JButton("Open");
     private JButton jbLogoutInbox = new JButton("Logout");
     /**
@@ -82,7 +84,7 @@ public class MessageClient extends JFrame implements GUIResource {
      */
     public MessageClient() {
         this.setTitle("Mail Client");
-        final Dimension defaultSize = new Dimension(525, 480);
+        final Dimension defaultSize = new Dimension(525, 490);
         this.setSize(defaultSize);
         this.setResizable(false);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -103,7 +105,7 @@ public class MessageClient extends JFrame implements GUIResource {
         JPanel jpButtonsInbox = new JPanel();
         jpButtonsInbox.add(jbOpen);
         jpButtonsInbox.add(jbLogoutInbox);
-
+        
         JPanel jpFromInbox = new JPanel();
         jpFromInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
         jpFromInbox.add(jlFromInbox);
@@ -113,6 +115,11 @@ public class MessageClient extends JFrame implements GUIResource {
         jpToInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
         jpToInbox.add(jlToInbox);
         jpToInbox.add(jtfToInbox);
+        
+        JPanel jpCcInbox = new JPanel();
+        jpCcInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpCcInbox.add(jlCcInbox);
+        jpCcInbox.add(jtfCcInbox);
 
         JPanel jpSubjectInbox = new JPanel();
         jpSubjectInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -123,9 +130,10 @@ public class MessageClient extends JFrame implements GUIResource {
         jpMessageInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
         jpMessageInbox.add(jlMessageInbox);
 
-        JPanel jpNorthInbox = new JPanel(new GridLayout(4, 1));
+        JPanel jpNorthInbox = new JPanel(new GridLayout(5, 1));
         jpNorthInbox.add(jpFromInbox);
         jpNorthInbox.add(jpToInbox);
+        jpNorthInbox.add(jpCcInbox);
         jpNorthInbox.add(jpSubjectInbox);
         jpNorthInbox.add(jpMessageInbox);
 
@@ -142,6 +150,7 @@ public class MessageClient extends JFrame implements GUIResource {
 
         jtfFromInbox.setEditable(false);
         jtfToInbox.setEditable(false);
+        jtfCcInbox.setEditable(false);
         jtfSubjectInbox.setEditable(false);
         jtaMessageInbox.setEditable(false);
 
@@ -204,10 +213,7 @@ public class MessageClient extends JFrame implements GUIResource {
 
         this.add(tabbedPane);
 
-        jbLogoutInbox.setEnabled(false);
-        jbOpen.setEnabled(false);
-        jbLogout.setEnabled(false);
-        jbSend.setEnabled(false);
+        setActionsEnabled(false);
 
         jbOpen.addActionListener(l -> openMail());
         jbSend.addActionListener(l -> validateAndSend());
@@ -310,7 +316,7 @@ public class MessageClient extends JFrame implements GUIResource {
 
     private void openMail() {
         String select = (String) mailBox.getSelectedItem();
-        if (select.equals("Received Messages")) {
+        if (select.equals(String.format("%-75s", "Received Messages"))) {
             showMessageDialog("Please select a mail message", "Invalid Selection", 2);
             return;
         } else {
@@ -321,6 +327,7 @@ public class MessageClient extends JFrame implements GUIResource {
 
                 jtfFromInbox.setText(mailCur.getSender());
                 jtfToInbox.setText(Arrays.toString(mailCur.getTo()));
+                jtfCcInbox.setText(Arrays.toString(mailCur.getCC()));
                 jtfSubjectInbox.setText(mailCur.getSubject());
                 jtaMessageInbox.setText(mailCur.getMessage());
             } catch (Exception e) {
@@ -334,6 +341,11 @@ public class MessageClient extends JFrame implements GUIResource {
         mailList.clear();
         mail.clear();
         mailBox.removeAllItems();
+        jtfFromInbox.setText("");
+        jtfToInbox.setText("");
+        jtfCcInbox.setText("");
+        jtfSubjectInbox.setText("");
+        jtaMessageInbox.setText("");
     }
 
     private void doClearCompose() {
@@ -369,7 +381,7 @@ public class MessageClient extends JFrame implements GUIResource {
     private void onSuccessfulLogin(String userName) {
         this.loggedInUser = userName;
         this.setActionsEnabled(true);
-        mailBox.addItem("Received Messages");
+        mailBox.addItem(String.format("%-75s", "Received Messages"));
     }
 
     /**
@@ -378,10 +390,10 @@ public class MessageClient extends JFrame implements GUIResource {
      * @param enable Sets enabled state
      */
     private void setActionsEnabled(boolean enable) {
-        jbSend.setEnabled(true);
-        jbLogout.setEnabled(true);
-        jbOpen.setEnabled(true);
-        jbLogoutInbox.setEnabled(true);
+        jbSend.setEnabled(enable);
+        jbLogout.setEnabled(enable);
+        jbOpen.setEnabled(enable);
+        jbLogoutInbox.setEnabled(enable);
     }
 
     @Override
@@ -394,8 +406,6 @@ public class MessageClient extends JFrame implements GUIResource {
         setActionsEnabled(false);
         this.loggedInUser = null;
         this.workerThread = null;
-        jbSend.setEnabled(false);
-        jbLogout.setEnabled(false);
         doClearInbox();
 
         loginDialog = new LoginDialog(this);
@@ -467,9 +477,9 @@ public class MessageClient extends JFrame implements GUIResource {
     @Override
     public void onMailReceived(MailMessage mailMessage) {
         String from = mailMessage.getSender();
-        String subject = mailMessage.getSubject();
+        String subject = String.format("%.25s", mailMessage.getSubject());
         String date = mailMessage.getDate();
-        String format = from + " Subject: " + subject + " " + date;
+        String format = from + " " + subject + " " + date;
 
         mailList.add(mailMessage);
         mail.add(format);
