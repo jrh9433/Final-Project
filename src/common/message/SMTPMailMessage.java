@@ -50,6 +50,12 @@ public class SMTPMailMessage extends MailMessage {
         return smtpRecipients;
     }
 
+    /**
+     * Takes the raw SMTP body directly from the constructor (and therefore right after we read it in the network layer)
+     * and sets the needed fields and formats the main body contents for display within the GUI
+     *
+     * @param contents raw SMTP body contents
+     */
     private void parseRawMessageBody(String[] contents) {
         // remove SMTP protocol formatting from values before we set them
         String from = contents[0].replace("From: ", "");
@@ -68,9 +74,9 @@ public class SMTPMailMessage extends MailMessage {
         StringBuilder builder = new StringBuilder();
 
         // array index at which we should use to start reading the body
-        // 7 gets us clear of all the fields we read above, as well as the newlines between them and the start
+        // 6 gets us clear of all the fields we read above, as well as the newlines between them and the start
         // off the main body
-        int displayStart = 7;
+        int displayStart = 6;
 
         // length of body array, should always be total content length minus display start
         int arrayLength = contents.length - displayStart;
