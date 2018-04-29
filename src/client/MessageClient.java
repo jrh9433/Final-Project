@@ -12,18 +12,27 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.net.Socket;
-import java.text.SimpleDateFormat;  
-import java.util.Date;  
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.List;
 
 /**
  * Client init class
  */
 public class MessageClient extends JFrame implements GUIResource {
 
+    protected final JTextField jtfAttemptStatus = new JTextField("Please fill with valid entries");
+
     /**
      * Thread to use for common.networking, don't block the GUI thread when possible
      */
     protected SharedWorkerThread workerThread;
+
+    Vector<MailMessage> mailList = new Vector<MailMessage>();
+    List<String> mail = new ArrayList<String>();
+    String[] mailString = mail.toArray(new String[mail.size()]);
+    boolean first = true;
+    JComboBox<String> mailBox = new JComboBox<>(mailString);
 
     /**
      * Username of the currently logged in user, or null
@@ -31,9 +40,9 @@ public class MessageClient extends JFrame implements GUIResource {
     private String loggedInUser;
 
     /**
-     * Subject Components
+     * Compose Components
      */
-      // North
+    // North
     private JLabel jlFrom = new JLabel("From:                ");
     private JTextField jtfFrom = new JTextField(20);
     private JLabel jlTo = new JLabel("To:                    ");
@@ -42,17 +51,27 @@ public class MessageClient extends JFrame implements GUIResource {
     private JTextField jtfCc = new JTextField(20);
     private JLabel jlSubject = new JLabel("Subject:             ");
     private JTextField jtfSubject = new JTextField(20);
-      // Center
+    // Center
     private JLabel jlMessage = new JLabel("Message:");
     private JTextArea jtaMessage = new JTextArea(10, 35);
     private JButton jbSend = new JButton("Send");
     private JButton jbLogout = new JButton("Logout");
-    protected final JTextField jtfAttemptStatus = new JTextField("Please fill with valid entries");
     private JCheckBox jcbEncrypt = new JCheckBox("Encrypt", false);
-    
     private boolean doEncrypt = false;
 
-
+    /**
+     * Inbox Components
+     */
+    private JLabel jlFromInbox = new JLabel("From:    ");
+    private JTextField jtfFromInbox = new JTextField(20);
+    private JLabel jlToInbox = new JLabel("To:        ");
+    private JTextField jtfToInbox = new JTextField(20);
+    private JLabel jlSubjectInbox = new JLabel("Subject: ");
+    private JTextField jtfSubjectInbox = new JTextField(20);
+    private JLabel jlMessageInbox = new JLabel("Message: ");
+    private JTextArea jtaMessageInbox = new JTextArea(10, 35);
+    private JButton jbOpen = new JButton("Open");
+    private JButton jbLogoutInbox = new JButton("Logout");
     /**
      * Login dialog that pops-up and gets disposed and re-initialized
      */
@@ -64,8 +83,9 @@ public class MessageClient extends JFrame implements GUIResource {
      */
     public MessageClient() {
         this.setTitle("Mail Client");
-        final Dimension defaultSize = new Dimension(550, 475);
+        final Dimension defaultSize = new Dimension(525, 480);
         this.setSize(defaultSize);
+        this.setResizable(false);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.addWindowListener(new WindowAdapter() {
             @Override
@@ -76,11 +96,59 @@ public class MessageClient extends JFrame implements GUIResource {
             }
         });
         JTabbedPane tabbedPane = new JTabbedPane();
-        
-        //tabbedPane.addTab("Inbox");
-        /**
-         * Compose Tab
-         */
+
+        // Inbox tab
+        JPanel jpMailList = new JPanel();
+        jpMailList.add(mailBox);
+
+        JPanel jpButtonsInbox = new JPanel();
+        jpButtonsInbox.add(jbOpen);
+        jpButtonsInbox.add(jbLogoutInbox);
+
+        JPanel jpFromInbox = new JPanel();
+        jpFromInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpFromInbox.add(jlFromInbox);
+        jpFromInbox.add(jtfFromInbox);
+
+        JPanel jpToInbox = new JPanel();
+        jpToInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpToInbox.add(jlToInbox);
+        jpToInbox.add(jtfToInbox);
+
+        JPanel jpSubjectInbox = new JPanel();
+        jpSubjectInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpSubjectInbox.add(jlSubjectInbox);
+        jpSubjectInbox.add(jtfSubjectInbox);
+
+        JPanel jpMessageInbox = new JPanel();
+        jpMessageInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jpMessageInbox.add(jlMessageInbox);
+
+        JPanel jpNorthInbox = new JPanel(new GridLayout(4, 1));
+        jpNorthInbox.add(jpFromInbox);
+        jpNorthInbox.add(jpToInbox);
+        jpNorthInbox.add(jpSubjectInbox);
+        jpNorthInbox.add(jpMessageInbox);
+
+        JPanel jpCenterInbox = new JPanel(new GridLayout(1, 1));
+        jtaMessageInbox.setLineWrap(true);
+        jtaMessageInbox.setWrapStyleWord(true);
+        jpCenterInbox.add(new JScrollPane(jtaMessageInbox));
+
+        JPanel jpInbox = new JPanel();
+        jpInbox.add(jpMailList);
+        jpInbox.add(jpButtonsInbox);
+        jpInbox.add(jpNorthInbox);
+        jpInbox.add(jpCenterInbox);
+
+        jtfFromInbox.setEditable(false);
+        jtfToInbox.setEditable(false);
+        jtfSubjectInbox.setEditable(false);
+        jtaMessageInbox.setEditable(false);
+
+        tabbedPane.addTab("Inbox", jpInbox);
+
+        // Compose tab
         JPanel jpFrom = new JPanel();
         jpFrom.setLayout(new FlowLayout(FlowLayout.LEFT));
         jpFrom.add(jlFrom);
@@ -129,20 +197,24 @@ public class MessageClient extends JFrame implements GUIResource {
         JPanel jpCompose = new JPanel();
         jpCompose.add(jpNorth);
         jpCompose.add(jpCenter);
-        
+
         tabbedPane.addTab("Compose", jpCompose);
-        // todo - list of messages panel, reading panel
-        
+
         jtfAttemptStatus.setVisible(false); // hide until we have something to say
         jtfAttemptStatus.setEditable(false);
-        
+
         this.add(tabbedPane);
-        
+
+        jbLogoutInbox.setEnabled(false);
+        jbOpen.setEnabled(false);
         jbLogout.setEnabled(false);
-        jbSend.setEnabled(false);  
-        jbSend.addActionListener(l ->ValidateAndSend());
-        jbLogout.addActionListener(l ->logout());
-        
+        jbSend.setEnabled(false);
+
+        jbOpen.addActionListener(l -> openMail());
+        jbSend.addActionListener(l -> validateAndSend());
+        jbLogout.addActionListener(l -> logout());
+        jbLogoutInbox.addActionListener(l -> logout());
+
         this.add(tabbedPane);
         this.setVisible(true);
         updateForDisconnect(); // inits everything as we want it
@@ -157,55 +229,83 @@ public class MessageClient extends JFrame implements GUIResource {
         new MessageClient();
     }
 
-    
-    private void ValidateAndSend() {
-        SimpleDateFormat sdfDate = new SimpleDateFormat("MM/dd/yyyy");  
+
+    private void validateAndSend() {
+        SimpleDateFormat sdfDate = new SimpleDateFormat("MM/dd/yyyy");
         Date date = new Date();
-        String currentDate = sdfDate.format(date);  
-        
+        String currentDate = sdfDate.format(date);
+
         String[] toField = jtfTo.getText().split(",");
         String fromField = jtfFrom.getText();
         String[] ccField = jtfCc.getText().split(",");
         String subjectField = jtfSubject.getText();
         String messageField = jtaMessage.getText();
-        
+
         jtfAttemptStatus.setVisible(false);
-          
-        if(fromField.isEmpty() || subjectField.isEmpty() || toField[0].isEmpty() || messageField.isEmpty()) {
-            showMessageDialog("Please fill out all necessary fields!","Warning",2);
+
+        if (fromField.isEmpty() || subjectField.isEmpty() || toField[0].isEmpty() || messageField.isEmpty()) {
+            showMessageDialog("Please fill out all necessary fields!", "Warning", 2);
             return;
         }
-        
-        if(jcbEncrypt.isSelected()) {
+
+        if (jcbEncrypt.isSelected()) {
             doEncrypt = true;
-        }
-        else {
+        } else {
             doEncrypt = false;
         }
-        
+
         MailMessage message = new MailMessage(
-            doEncrypt,
-            toField,
-            fromField,
-            ccField,
-            currentDate,
-            subjectField,
-            messageField
+                doEncrypt,
+                toField,
+                fromField,
+                ccField,
+                currentDate,
+                subjectField,
+                messageField
         );
 
         doClearCompose();
         workerThread.submitTask(() -> workerThread.sendOutgoingMessage(message));
-        showMessageDialog("Your mail has been sent to the server!","Message Sent",1);
+        showMessageDialog("Your mail has been sent to the server!", "Message Sent", 1);
 
     }
-    
+
+    private void openMail() {
+        String select = (String) mailBox.getSelectedItem();
+        if (select.equals("Received Messages")) {
+            showMessageDialog("Please select a mail message", "Invalid Selection", 2);
+            return;
+        } else {
+            try {
+                int mailPos = mailBox.getSelectedIndex();
+
+                MailMessage mailCur = mailList.get(mailPos - 1);
+
+                jtfFromInbox.setText(mailCur.getSender());
+                jtfToInbox.setText(Arrays.toString(mailCur.getTo()));
+                jtfSubjectInbox.setText(mailCur.getSubject());
+                jtaMessageInbox.setText(mailCur.getMessage());
+            } catch (Exception e) {
+                showMessageDialog("Unexpected reading error", "Error", 2);
+                return;
+            }
+        }
+    }
+
+    private void doClearInbox() {
+        mailList.clear();
+        mail.clear();
+        mailBox.removeAllItems();
+    }
+
     private void doClearCompose() {
         jtfFrom.setText("");
         jtfTo.setText("");
         jtfCc.setText("");
         jtfSubject.setText("");
         jtaMessage.setText("");
-    }  
+        jcbEncrypt.setSelected(false);
+    }
 
     /**
      * Called when the client chooses to log out from the server
@@ -217,8 +317,9 @@ public class MessageClient extends JFrame implements GUIResource {
         workerThread.submitTask(() -> workerThread.notifyRemoteToDisconnect());
         workerThread.submitTask(() -> workerThread.disconnect());
         workerThread = null;
-        
+
         doClearCompose();
+        doClearInbox();
         updateForDisconnect();
     }
 
@@ -230,8 +331,8 @@ public class MessageClient extends JFrame implements GUIResource {
     private void onSuccessfulLogin(String userName) {
         this.loggedInUser = userName;
         this.setActionsEnabled(true);
-        jbSend.setEnabled(true);
-        jbLogout.setEnabled(true);
+        mailBox.addItem("Received Messages");
+        onMailReceived(new MailMessage("kyle@localhost", "Bob@localhost", "Hello", "Hey it's me Bob"));
     }
 
     /**
@@ -240,7 +341,10 @@ public class MessageClient extends JFrame implements GUIResource {
      * @param enable Sets enabled state
      */
     private void setActionsEnabled(boolean enable) {
-        //demoButton.setEnabled(enable);
+        jbSend.setEnabled(true);
+        jbLogout.setEnabled(true);
+        jbOpen.setEnabled(true);
+        jbLogoutInbox.setEnabled(true);
     }
 
     @Override
@@ -255,7 +359,7 @@ public class MessageClient extends JFrame implements GUIResource {
         this.workerThread = null;
         jbSend.setEnabled(false);
         jbLogout.setEnabled(false);
-        //clearAllMessages(); // todo - when reading and list panels are setup, clear them
+        doClearInbox();
 
         loginDialog = new LoginDialog(this);
     }
@@ -325,8 +429,16 @@ public class MessageClient extends JFrame implements GUIResource {
         });
     }
 
+    // called when a message is received
     @Override
-    public void onMailReceived(MailMessage mail) {
-        // called when a message is received
+    public void onMailReceived(MailMessage mailMessage) {
+        String from = mailMessage.getSender();
+        String subject = mailMessage.getSubject();
+        String date = mailMessage.getDate();
+        String format = from + " Subject: " + subject + " " + date;
+
+        mailList.add(mailMessage);
+        mail.add(format);
+        mailBox.addItem(format);
     }
 }
