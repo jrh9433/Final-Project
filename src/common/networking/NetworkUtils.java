@@ -80,12 +80,8 @@ public class NetworkUtils {
      * @param messages     messages to send
      */
     public static void sendMessages(GUIResource gui, PrintWriter writer, boolean obfuscateLog, String... messages) {
-        for (String msg : messages) {
-            if (obfuscateLog) {
-                msg = msg.replaceAll(".", "*");
-            }
-
-            gui.logln(msg);
+        for (final String msg : messages) {
+            gui.logln(obfuscateLog ? msg.replaceAll(".", "*") : msg);
             writer.write(msg + MSG_DELIMITER);
         }
 
