@@ -3,7 +3,6 @@ package client;
 import common.GUIResource;
 import common.SharedWorkerThread;
 import common.message.MailMessage;
-import common.networking.AuthdNetworkManager;
 import common.networking.NetworkManager;
 
 import javax.swing.*;
@@ -386,20 +385,11 @@ public class MessageClient extends JFrame implements GUIResource {
             logln("Attempting to connect to " + host + ":" + port);
             connection = new Socket(host, port);
 
-            // no user? assume no auth
-            if (username == null || username.equals("")) {
-                NetworkManager netManager = new NetworkManager(this, connection);
-
-                processLoginResponse(true, netManager);
-                return;
-            }
-
-            // User specified? assume auth
-            AuthdNetworkManager authdManager = new AuthdNetworkManager(this, connection);
-            boolean authSuccess = authdManager.attemptLogin(username, password);
+            NetworkManager netManager = new NetworkManager(this, connection);
+            boolean authSuccess = netManager.attemptLogin(username, password);
 
             if (authSuccess) {
-                processLoginResponse(true, authdManager);
+                processLoginResponse(true, netManager);
             } else {
                 processLoginResponse(false, null); // on false no network params are used
             }

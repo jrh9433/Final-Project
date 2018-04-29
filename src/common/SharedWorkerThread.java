@@ -50,7 +50,7 @@ public class SharedWorkerThread extends Thread {
      * @param manager   Instance of NetworkManager
      */
     public SharedWorkerThread(GUIResource guiClient, NetworkManager manager) {
-        super("Shared Worker Thread : " + (guiClient.isServer() ? "Server" : "Client"));
+        super("Shared Worker Thread : " + (guiClient.isServer() ? "Server" : "Client") + " : " + manager.getRemoteIP());
 
         this.guiClient = guiClient;
         this.isServer = guiClient.isServer();

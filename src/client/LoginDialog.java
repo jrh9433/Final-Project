@@ -100,12 +100,21 @@ class LoginDialog extends JDialog {
         final String host = jtfServerIp.getText();
         final int port = ProtocolConstants.SERVER_DEFAULT_LISTEN_PORT;
 
-        jbLogin.setEnabled(false);
-        jtfAttemptStatus.setText("Authenticating...");
-        jtfAttemptStatus.setVisible(true);
+        if (host == null || host.equals("")) {
+            messageClient.showMessageDialog("No host specified!", "Input Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         String username = jtfLoginUsername.getText();
         String password = jtfLoginPassword.getText();
+
+        if (username == null || username.equals("")) {
+            messageClient.showMessageDialog("Must specify a username!", "Input Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        jbLogin.setEnabled(false);
+        jtfAttemptStatus.setText("Authenticating...");
+        jtfAttemptStatus.setVisible(true);
 
         messageClient.attemptToConnect(host, port, username, password);
     }

@@ -1,6 +1,7 @@
 package common.networking;
 
 import common.GUIResource;
+import common.Pair;
 import common.message.MailMessage;
 import common.message.SMTPMailMessage;
 
@@ -52,6 +53,57 @@ public class NetworkManager {
         this.rawIn = connection.getInputStream();
         this.netOut = NetworkUtils.getNewOutputWriter(connection);
         this.netIn = NetworkUtils.getNewInputScanner(connection);
+    }
+
+    /**
+     * Attempts to authenticate with the remote using the given details
+     *
+     * @param username username to identify as
+     * @param password password to prove ownership
+     * @return True if login successful, false if failure
+     */
+    public boolean attemptLogin(String username, String password) {
+        NetworkUtils.sendMessage(guiClient, netOut, username);
+        NetworkUtils.sendMessages(guiClient, netOut, true, password); // flag obfuscates log to hide password
+
+        String response = netIn.nextLine();
+        logln(response);
+
+        if (response.equals(ProtocolConstants.LOGIN_SUCCESS)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Server-side util to read incoming login credentials
+     *
+     * @return new Pair, username is the key, password is the value
+     */
+    public Pair<String, String> readIncomingLoginInfo() {
+        String userName = netIn.nextLine();
+        logln(userName);
+
+        String password = netIn.nextLine();
+        logln(password.replaceAll(".", "*")); // hide password in logs
+
+        return new Pair<>(userName, password);
+    }
+
+    /**
+     * Notifies the remote that the login failed
+     */
+    public void notifyLoginFailed() {
+        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.LOGIN_REJECTED);
+        this.closeConnections();
+    }
+
+    /**
+     * Notifies the remote that the login was a success
+     */
+    public void notifyLoginSuccess() {
+        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.LOGIN_SUCCESS);
     }
 
     /**
@@ -182,6 +234,10 @@ public class NetworkManager {
      */
     public String getRemoteHostname() {
         return connection.getInetAddress().getHostName();
+    }
+
+    public String getRemoteIP() {
+        return connection.getInetAddress().getHostAddress();
     }
 
     /**

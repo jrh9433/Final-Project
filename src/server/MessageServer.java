@@ -26,30 +26,37 @@ public class MessageServer extends JFrame implements GUIResource {
      * Default data save path
      */
     private static final String SAVED_USER_DATA_PATH = "./user-login-data.bin";
+
     /**
      * Manages users, passwords, and their data
      */
     protected final AuthenticationManager authenticationManager = new AuthenticationManager(this);
+
     /**
      * Starts the server
      */
     private final JButton jbStart = new JButton("Start");
+
     /**
      * Creates new users
      */
     private final JButton jbAddUser = new JButton("Add User");
+
     /**
      * Clears the log
      */
     private final JButton jbClear = new JButton("Clear");
+
     /**
      * Sets whether users are required to authenticate
      */
     private final JCheckBox jcbSecurity = new JCheckBox("Security", null, true);
+
     /**
      * Main text output area
      */
     private final JTextArea jtaLog = new JTextArea();
+
     /**
      * Manages incoming messages
      */
@@ -284,40 +291,32 @@ public class MessageServer extends JFrame implements GUIResource {
          * @return Null if auth failed, a NetworkManager instance if okay to proceed
          */
         private NetworkManager authenticateUser(Socket socket) {
-            if (!jcbSecurity.isSelected()) {
-                try {
-                    return new NetworkManager(mainInstance, socket);
-                } catch (IOException e) {
-                    logln("Error initializing connection with remote");
-                    e.printStackTrace();
-                }
-            }
-
             logln("Client attempting to authenticate from: " + socket.getInetAddress().getHostName());
 
-            AuthdNetworkManager authdManager;
+            NetworkManager netManager;
             try {
-                authdManager = new AuthdNetworkManager(mainInstance, socket);
+                netManager = new NetworkManager(mainInstance, socket);
             } catch (IOException e) {
                 logln("Error initializing connection with remote");
                 e.printStackTrace();
                 return null;
             }
 
-            Pair<String, String> userAndPass = authdManager.readIncomingLoginInfo();
+            Pair<String, String> userAndPass = netManager.readIncomingLoginInfo();
             final String username = userAndPass.getKey();
             final String password = userAndPass.getVal();
 
-            String remoteHostname = authdManager.getRemoteHostname();
+            String remoteHostname = netManager.getRemoteHostname();
 
-            // check user information against user store
-            if (authenticationManager.isValidLogin(username, password)) {
-                authdManager.notifyLoginSuccess();
+            // authenticate only if we have security enabled, else just let everyone be whoever
+            boolean securityOverride = !jcbSecurity.isSelected();
+            if (securityOverride || authenticationManager.isValidLogin(username, password)) {
+                netManager.notifyLoginSuccess();
 
                 logln(remoteHostname + " authenticated as " + username);
-                return authdManager;
+                return netManager;
             } else {
-                authdManager.notifyLoginFailed(); // also closes connections
+                netManager.notifyLoginFailed(); // also closes connections
 
                 logln(remoteHostname + " failed to authenticate as " + username);
                 return null;

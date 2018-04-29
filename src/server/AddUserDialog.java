@@ -7,26 +7,32 @@ import java.awt.*;
  * Dialog used to add users to the server user manager
  */
 class AddUserDialog extends JDialog {
+
     /**
      * Default password to use when creating users
      */
     private static final String DEFAULT_PASSWORD = "ISTE121";
+
     /**
      * Username for the new user
      */
     private final JTextField jtfUser = new JTextField(10);
+
     /**
      * Password for the new user
      */
     private final JTextField jtfPass = new JPasswordField(10);
+
     /**
      * Adds the user to the server
      */
     private final JButton jbAdd = new JButton("Add");
+
     /**
      * Cancels the operation
      */
     private final JButton jbCancel = new JButton("Cancel");
+
     /**
      * Instance of the main server
      */
@@ -69,8 +75,13 @@ class AddUserDialog extends JDialog {
         String username = jtfUser.getText();
         String pass = jtfPass.getText();
 
-        if (username == null || username.equals("") || pass == null || pass.equals("")) {
+        if (username == null || username.equals("")) { // only check usernames, blank passwords are fine
             return;
+        }
+
+        // ensure pass is never null
+        if (pass == null) {
+            pass = "";
         }
 
         messageServer.authenticationManager.addNewUser(username, pass);
