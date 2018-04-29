@@ -157,7 +157,9 @@ public class NetworkManager {
             logln(nextLine);
 
             String smptRecip = nextLine.substring(9, nextLine.length() - 1); // break down to just address
-            smptRecipients.add(smptRecip);
+            if (!smptRecip.isEmpty()) {
+                smptRecipients.add(smptRecip);
+            }
 
             NetworkUtils.sendMessage(guiClient, netOut, okay250);
             nextLine = netIn.nextLine();

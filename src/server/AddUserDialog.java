@@ -11,7 +11,7 @@ class AddUserDialog extends JDialog {
     /**
      * Default password to use when creating users
      */
-    private static final String DEFAULT_PASSWORD = "ISTE121";
+    public static final String DEFAULT_PASSWORD = "ISTE121";
 
     /**
      * Username for the new user

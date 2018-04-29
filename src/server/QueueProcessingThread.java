@@ -4,7 +4,13 @@ import common.Pair;
 import common.SharedWorkerThread;
 import common.message.MailMessage;
 import common.message.SMTPMailMessage;
+import common.networking.NetworkManager;
+import common.networking.ProtocolConstants;
 
+import java.io.*;
+import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -54,7 +60,7 @@ public class QueueProcessingThread extends Thread {
      * Submits a message to be sent internally on this server
      *
      * @param username name of user on this server to send message to
-     * @param msg message to send
+     * @param msg      message to send
      */
     public void submitMessageToIncoming(String username, MailMessage msg) {
         pendingTasks.add(() -> this.incomingQueue.add(new Pair<>(username, msg)));
@@ -94,7 +100,13 @@ public class QueueProcessingThread extends Thread {
             }
 
             Pair<String, MailMessage> userMail = incomingQueue.poll();
-            server.relayMessageToLocalUser(userMail.getKey(), userMail.getVal());
+            String userName = userMail.getKey();
+            MailMessage message = userMail.getVal();
+
+            // log message to file
+            writeMessageToFile("logs/localServer", userName, message);
+
+            server.relayMessageToLocalUser(userName, message);
 
             processed++;
         }
@@ -123,10 +135,56 @@ public class QueueProcessingThread extends Thread {
                     continue;
                 }
 
-                // todo - relay to other servers
+                // log message to file
+                String userName = userHost[0];
+                String remoteHost = userHost[1];
+
+                writeMessageToFile("logs/" + remoteHost, userName, message);
+
+                // attempt to relay to remotes
+                // todo
             }
 
             processed++;
+        }
+    }
+
+    /**
+     * Logs message to file
+     *
+     * @param folderName directory to put the file under
+     * @param userName   user responsible
+     * @param msg        message to log
+     */
+    private void writeMessageToFile(String folderName, String userName, MailMessage msg) {
+        String path = folderName + "/";
+
+        if (userName != null) {
+            path += userName + "/";
+        }
+
+        // format current time to use as file name
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy.MM.dd-HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+        String currentTime = dtf.format(now);
+
+        path += currentTime;
+        File out = new File(path + ".txt");
+
+        try {
+            if (!out.exists()) {
+                out.getParentFile().mkdirs(); // make directories for path
+                out.createNewFile(); // make file
+            }
+
+            PrintWriter writer = new PrintWriter(new FileOutputStream(out));
+            writer.write(msg.toString());
+
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            server.logln("Error logging message from " + msg.getSender() + ": " + e);
+            e.printStackTrace();
         }
     }
 

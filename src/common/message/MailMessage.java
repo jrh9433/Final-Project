@@ -214,7 +214,7 @@ public class MailMessage {
                         "Cc: %s%n" +
                         "Date: %s%n" +
                         "Subject: %s%n" +
-                        "Body: %s%n",
+                        "Body: %n%s%n",
                 String.valueOf(encrypted),
                 getSender(),
                 Arrays.toString(getTo()),

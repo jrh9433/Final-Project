@@ -127,7 +127,7 @@ public class SharedWorkerThread extends Thread {
      * @param message message to process
      */
     private void processIncomingData(String message) {
-        if (message.startsWith("MAIL FROM")) {
+        if (message.toUpperCase().startsWith("MAIL FROM")) { // case insensitive
             processIncomingMessage(message);
         }
     }
