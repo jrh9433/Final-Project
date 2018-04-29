@@ -43,17 +43,7 @@ public interface GUIResource {
     /**
      * Called when the server sends a new message to the client. Use to update GUIs.
      */
-    default void onMailReceived(MailMessage mail) {
-        logln(mail.toString());
-    }
-
-    /**
-     * Called when a message is received by the server, to be sent elsewhere
-     *
-     * @param mail mail to send
-     */
-    default void onOutgoingMail(MailMessage mail) {
-    }
+    void onMailReceived(MailMessage mail);
 
     /**
      * Notifies the implementing GUI that the network thread has disconnected

@@ -32,6 +32,24 @@ public class SMTPMailMessage extends MailMessage {
         parseRawMessageBody(messageContents);
     }
 
+    /**
+     * Returns the SMTP sender
+     *
+     * @return smtp sender
+     */
+    public String getSmtpFrom() {
+        return smtpFrom;
+    }
+
+    /**
+     * Gets intended SMTP recipients of the message
+     *
+     * @return smtp recipients
+     */
+    public String[] getSmtpRecipients() {
+        return smtpRecipients;
+    }
+
     private void parseRawMessageBody(String[] contents) {
         String from = contents[0];
         String to = contents[1];

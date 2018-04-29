@@ -253,6 +253,28 @@ public class MessageClient extends JFrame implements GUIResource {
             doEncrypt = false;
         }
 
+        boolean toValidates = validateRecipients(toField);
+        boolean ccValidates = validateRecipients(ccField);
+
+        // validate that fields contain an "@" for relaying purposes
+        // if either field has a problem with it
+        if (!toValidates || !ccValidates) {
+            String warn = "The following fields don't validate properly: ";
+
+            // if to doesn't validate specifically put it in the warning
+            if (!toValidates) {
+                warn += "to recipients; ";
+            }
+
+            // if cc doesn't validate specifically put in the warning
+            if (!ccValidates) {
+                warn += "cc recipients;";
+            }
+
+            showMessageDialog(warn, "Input Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         MailMessage message = new MailMessage(
                 doEncrypt,
                 toField,
@@ -266,7 +288,24 @@ public class MessageClient extends JFrame implements GUIResource {
         doClearCompose();
         workerThread.submitTask(() -> workerThread.sendOutgoingMessage(message));
         showMessageDialog("Your mail has been sent to the server!", "Message Sent", 1);
+    }
 
+    /**
+     * Ensures that message recipients have an @ so that servers can relay their messages appropriately
+     *
+     * @param recipients array of recipients
+     * @return True if validated successfully
+     */
+    private boolean validateRecipients(String[] recipients) {
+        boolean validates = true;
+        for (String str : recipients) {
+            if (!str.isEmpty() && !str.contains("@")) {
+                validates = false;
+                logln("Error validating address: " + str);
+            }
+        }
+
+        return validates;
     }
 
     private void openMail() {
@@ -331,7 +370,6 @@ public class MessageClient extends JFrame implements GUIResource {
         this.loggedInUser = userName;
         this.setActionsEnabled(true);
         mailBox.addItem("Received Messages");
-        onMailReceived(new MailMessage("kyle@localhost", "Bob@localhost", "Hello", "Hey it's me Bob"));
     }
 
     /**
@@ -403,6 +441,12 @@ public class MessageClient extends JFrame implements GUIResource {
         }
     }
 
+    /**
+     * Used to update the client's state following a login attempt
+     *
+     * @param wasSuccess whether the login attempt was successful or rejected
+     * @param manager Null if rejected, instance of {@link NetworkManager} if accepted
+     */
     public void processLoginResponse(boolean wasSuccess, NetworkManager manager) {
         SwingUtilities.invokeLater(() -> { // sync back to GUI thread
             if (wasSuccess) {

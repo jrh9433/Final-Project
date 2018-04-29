@@ -96,8 +96,7 @@ public class SharedWorkerThread extends Thread {
         initConnection();
 
         while (isConnected) {
-            // process pending tasks like sending out data, processing incoming data queued up from the
-            // receive thread, etc
+            // process pending tasks like sending out data
             processPendingTasks();
 
             boolean hasNewData;

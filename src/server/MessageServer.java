@@ -2,7 +2,9 @@ package server;
 
 import common.*;
 import common.message.MailMessage;
-import common.networking.*;
+import common.message.SMTPMailMessage;
+import common.networking.NetworkManager;
+import common.networking.ProtocolConstants;
 
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;
@@ -10,12 +12,8 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.*;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Server init class
@@ -57,15 +55,12 @@ public class MessageServer extends JFrame implements GUIResource {
      */
     private final JTextArea jtaLog = new JTextArea();
 
-    /**
-     * Manages incoming messages
-     */
-    private final Queue<MailMessage> incomingQueue = new ConcurrentLinkedQueue<>();
+    private final QueueProcessingThread queueProcessor = new QueueProcessingThread(this);
 
     /**
-     * Manages outgoing messages
+     * Local addresses used to determine when this server is the intended target
      */
-    private final Queue<MailMessage> outgoingQueue = new ConcurrentLinkedQueue<>();
+    private final Set<String> localAddresses = new HashSet<>();
 
     /**
      * Reference to server thread
@@ -90,8 +85,12 @@ public class MessageServer extends JFrame implements GUIResource {
                 }
 
                 authenticationManager.writeUserData(SAVED_USER_DATA_PATH);
+                queueProcessor.shutdown();
             }
         });
+
+        // populate local addresses that this server can receive mail on
+        populateLocalHosts();
 
         // start stop button
         jbStart.addActionListener(l -> onStartClicked());
@@ -175,6 +174,80 @@ public class MessageServer extends JFrame implements GUIResource {
         return true;
     }
 
+    @Override
+    public void onMailReceived(MailMessage mail) {
+        SMTPMailMessage smtpMail = (SMTPMailMessage) mail;
+
+        // determine where it needs to go
+        for (String target : smtpMail.getSmtpRecipients()) {
+            // break into user and host
+            String[] userHost = target.split("@", 2);
+
+            if (userHost.length != 2) {
+                logln("Malformed address: " + target);
+                continue;
+            }
+
+            String host = userHost[1];
+            if (isLocalServerAddress(host)) {
+                // if local, put in internal queue
+                queueProcessor.submitMessageToIncoming(userHost[0], mail);
+                continue;
+            } else {
+                // if external, put in relay queue
+                queueProcessor.submitMessageToOutgoing(smtpMail);
+                continue;
+            }
+        }
+    }
+
+    /**
+     * Populates local addresses that will be used to determine where to send messages
+     * or if they should be handled internally
+     */
+    private void populateLocalHosts() {
+        try {
+            InetAddress local = InetAddress.getLocalHost();
+
+            localAddresses.add(local.getHostName()); // system hostname
+            localAddresses.add(local.getHostAddress()); // system IP
+            localAddresses.add(local.getCanonicalHostName()); // system FQDN
+            localAddresses.add("localhost"); // localhost constant
+        } catch (UnknownHostException ex) {
+            logln("Unable to populate local addresses!");
+            ex.printStackTrace();
+            return;
+        }
+
+        logln("This server can receive mail on: ");
+        localAddresses.forEach(this::logln);
+        logln(""); // empty newline
+    }
+
+    /**
+     * Checks whether or not the given address is this server
+     *
+     * @param address address to check
+     * @return True, if the address belongs to this server
+     */
+    public boolean isLocalServerAddress(String address) {
+        return localAddresses.contains(address);
+    }
+
+    /**
+     * Relays a message to a locally connected client
+     *
+     * @param username who to send the message to
+     * @param msg message to send
+     */
+    public void relayMessageToLocalUser(String username, MailMessage msg) {
+        SharedWorkerThread target = connectionThread.connectedClients.get(username);
+
+        if (target != null) {
+            target.submitTask(() -> target.sendOutgoingMessage(msg)); // sends message to their client);
+        }
+    }
+
     /**
      * Implements the GUI popup message from the common.GUIResource interface
      * See docs there for additional info
@@ -202,7 +275,7 @@ public class MessageServer extends JFrame implements GUIResource {
         /**
          * Connected client list, key is logged in username, val is client thread for said user
          */
-        private final List<SharedWorkerThread> connectedClients = new ArrayList<>();
+        private final Map<String, SharedWorkerThread> connectedClients = new HashMap<>();
 
         /**
          * Controls the overall "listening" state of the thread
@@ -231,8 +304,8 @@ public class MessageServer extends JFrame implements GUIResource {
             listening = false;
 
             // thread safety, submit disconnect actions to the threads to be executed by the threads
-            connectedClients.forEach(c -> c.submitTask(c::notifyRemoteToDisconnect));
-            connectedClients.forEach(c -> c.submitTask(c::disconnect));
+            connectedClients.values().forEach(c -> c.submitTask(c::notifyRemoteToDisconnect));
+            connectedClients.values().forEach(c -> c.submitTask(c::disconnect));
             connectedClients.clear();
 
             try {
@@ -271,16 +344,18 @@ public class MessageServer extends JFrame implements GUIResource {
                     return;
                 }
 
-                NetworkManager manager = authenticateUser(clientSocket);
-
-                // check user information against user store
-                if (manager != null) {
-                    // spin up a client thread for the newly connected client
-                    SharedWorkerThread client = new SharedWorkerThread(mainInstance, manager);
-                    connectedClients.add(client);
-                    client.start();
+                Pair<String, NetworkManager> userConnection = authenticateUser(clientSocket);
+                if (userConnection == null) {
+                    continue; // auth failed
                 }
-                // else continue
+
+                String username = userConnection.getKey();
+                NetworkManager manager = userConnection.getVal();
+
+                // spin up a client thread for the newly connected client
+                SharedWorkerThread client = new SharedWorkerThread(mainInstance, manager);
+                connectedClients.put(username, client);
+                client.start();
             }
         }
 
@@ -290,7 +365,7 @@ public class MessageServer extends JFrame implements GUIResource {
          * @param socket connection socket
          * @return Null if auth failed, a NetworkManager instance if okay to proceed
          */
-        private NetworkManager authenticateUser(Socket socket) {
+        private Pair<String, NetworkManager> authenticateUser(Socket socket) {
             logln("Client attempting to authenticate from: " + socket.getInetAddress().getHostName());
 
             NetworkManager netManager;
@@ -314,7 +389,7 @@ public class MessageServer extends JFrame implements GUIResource {
                 netManager.notifyLoginSuccess();
 
                 logln(remoteHostname + " authenticated as " + username);
-                return netManager;
+                return new Pair<>(username, netManager);
             } else {
                 netManager.notifyLoginFailed(); // also closes connections
 
