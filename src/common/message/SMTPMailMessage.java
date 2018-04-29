@@ -51,11 +51,12 @@ public class SMTPMailMessage extends MailMessage {
     }
 
     private void parseRawMessageBody(String[] contents) {
-        String from = contents[0];
-        String to = contents[1];
-        String cc = contents[2];
-        String date = contents[3];
-        String subject = contents[4];
+        // remove SMTP protocol formatting from values before we set them
+        String from = contents[0].replace("From: ", "");
+        String to = contents[1].replace("To: ", "");
+        String cc = contents[2].replace("Cc: ", "");
+        String date = contents[3].replace("Date: ", "");
+        String subject = contents[4].replace("Subject: ", "");
 
         // parse from
         this.setFrom(getAllMatches(from, EMAIL_ADDRESS_PATTERN)[0]);
@@ -65,7 +66,19 @@ public class SMTPMailMessage extends MailMessage {
         this.setSubject(subject);
 
         StringBuilder builder = new StringBuilder();
-        for (String line : contents) {
+
+        // array index at which we should use to start reading the body
+        // 7 gets us clear of all the fields we read above, as well as the newlines between them and the start
+        // off the main body
+        int displayStart = 7;
+
+        // length of body array, should always be total content length minus display start
+        int arrayLength = contents.length - displayStart;
+
+        String[] body = new String[arrayLength];
+        System.arraycopy(contents, displayStart, body, 0, arrayLength);
+
+        for (String line : body) {
             builder.append(line).append("\n");
         }
 
