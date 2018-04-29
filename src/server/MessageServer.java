@@ -180,6 +180,10 @@ public class MessageServer extends JFrame implements GUIResource {
 
         // determine where it needs to go
         for (String target : smtpMail.getSmtpRecipients()) {
+            if (target.isEmpty()) {
+                continue;
+            }
+
             // break into user and host
             String[] userHost = target.split("@", 2);
 

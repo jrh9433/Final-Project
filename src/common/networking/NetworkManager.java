@@ -180,7 +180,6 @@ public class NetworkManager {
         // content length is unknown to us
         List<String> messageContents = new ArrayList<>();
 
-        logln(nextLine); // first line of content was read in by encrypted handling above
         while (!nextLine.equals(ProtocolConstants.DATA_TERMINATOR)) {
             logln(nextLine);
             messageContents.add(nextLine);
