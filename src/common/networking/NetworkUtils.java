@@ -114,6 +114,10 @@ public class NetworkUtils {
 
         for (String[] array : recipientArrays) {
             for (String recipient : array) {
+                if (recipient.isEmpty()) {
+                    continue;
+                }
+
                 formatted.add(ProtocolConstants.RECIPIENT_TO_PREFIX + "<" + recipient + ">");
             }
         }
