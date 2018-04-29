@@ -82,7 +82,6 @@ public class QueueProcessingThread extends Thread {
         running = true;
 
         this.relayWorkers.forEach(c -> c.submitTask(c::notifyRemoteToDisconnect));
-        this.relayWorkers.forEach(c -> c.submitTask(c::disconnect));
         this.relayWorkers.clear();
     }
 

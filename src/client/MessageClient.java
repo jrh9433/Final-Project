@@ -365,8 +365,6 @@ public class MessageClient extends JFrame implements GUIResource {
      */
     private void logout() {
         workerThread.submitTask(() -> workerThread.notifyRemoteToDisconnect());
-        workerThread.submitTask(() -> workerThread.disconnect());
-        workerThread = null;
 
         doClearCompose();
         doClearInbox();
@@ -463,6 +461,10 @@ public class MessageClient extends JFrame implements GUIResource {
                 onSuccessfulLogin(loginDialog.jtfLoginUsername.getText());
                 loginDialog.dispose();
                 loginDialog = null;
+
+                if (workerThread != null) {
+                    workerThread.haltThread();
+                }
 
                 workerThread = new SharedWorkerThread(this, manager);
                 workerThread.start();

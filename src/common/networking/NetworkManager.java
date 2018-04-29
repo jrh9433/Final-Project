@@ -219,6 +219,16 @@ public class NetworkManager {
         }
     }
 
+    public void sendDisconnect() {
+        NetworkUtils.sendMessage(guiClient, netOut, "QUIT");
+        logln(netIn.nextLine()); // 221
+    }
+
+    public void receiveDisconnect(String message) {
+        logln(message); // already read in QUIT
+        NetworkUtils.sendMessage(guiClient, netOut, "221 " + this.getLocalHostname() + " Service closing transmission channel");
+    }
+
     /**
      * Gets the hostname of the local client
      *

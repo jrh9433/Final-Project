@@ -309,7 +309,6 @@ public class MessageServer extends JFrame implements GUIResource {
 
             // thread safety, submit disconnect actions to the threads to be executed by the threads
             connectedClients.values().forEach(c -> c.submitTask(c::notifyRemoteToDisconnect));
-            connectedClients.values().forEach(c -> c.submitTask(c::disconnect));
             connectedClients.clear();
 
             try {

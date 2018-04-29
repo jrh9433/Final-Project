@@ -127,8 +127,13 @@ public class SharedWorkerThread extends Thread {
      * @param message message to process
      */
     private void processIncomingData(String message) {
-        if (message.toUpperCase().startsWith("MAIL FROM")) { // case insensitive
+        message = message.toUpperCase(); // normalize to uppercase
+
+        if (message.startsWith("MAIL FROM")) {
             processIncomingMessage(message);
+        } else if (message.equals("QUIT")) {
+            networkManager.receiveDisconnect(message);
+            this.disconnect();
         }
     }
 
@@ -141,7 +146,8 @@ public class SharedWorkerThread extends Thread {
      * Notifies the remote to disconnect gracefully
      */
     public void notifyRemoteToDisconnect() {
-        // todo
+        networkManager.sendDisconnect();
+        this.disconnect();
     }
 
     /**
@@ -170,7 +176,7 @@ public class SharedWorkerThread extends Thread {
     /**
      * Disconnects this thread from the remote
      */
-    public void disconnect() {
+    private void disconnect() {
         this.isConnected = false;
         guiClient.updateForDisconnect();
     }
