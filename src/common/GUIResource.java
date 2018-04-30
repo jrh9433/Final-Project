@@ -52,6 +52,14 @@ public interface GUIResource {
     }
 
     /**
+     * Alerts the server that a worker has terminated
+     *
+     * @param username username's thread that has terminated
+     */
+    default void updateServer(String username) {
+    }
+
+    /**
      * Gets the location that will position the specified dialog window at the
      * center of the specified parent window.
      * <p>

@@ -147,6 +147,8 @@ public class SharedWorkerThread extends Thread {
      */
     public void notifyRemoteToDisconnect() {
         networkManager.sendDisconnect();
+        networkManager.closeConnections();
+        guiClient.updateServer(networkManager.getUser());
         this.disconnect();
     }
 

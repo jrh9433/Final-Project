@@ -205,6 +205,11 @@ public class MessageServer extends JFrame implements GUIResource {
         }
     }
 
+    @Override
+    public void updateServer(String username) {
+        this.connectionThread.connectedClients.remove(username);
+    }
+
     /**
      * Populates local addresses that will be used to determine where to send messages
      * or if they should be handled internally

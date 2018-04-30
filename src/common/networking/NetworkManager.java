@@ -41,6 +41,11 @@ public class NetworkManager {
     private final InputStream rawIn;
 
     /**
+     * Username this manager corresponds to
+     */
+    private String username;
+
+    /**
      * Constructs a NetworkManager
      *
      * @param client     client resources for logging
@@ -70,6 +75,7 @@ public class NetworkManager {
         logln(response);
 
         if (response.equals(ProtocolConstants.LOGIN_SUCCESS)) {
+            this.username = username;
             return true;
         } else {
             return false;
@@ -249,6 +255,15 @@ public class NetworkManager {
 
     public String getRemoteIP() {
         return connection.getInetAddress().getHostAddress();
+    }
+
+    /**
+     * Gets this user this manager corresponds to
+     *
+     * @return username
+     */
+    public String getUser() {
+        return this.username;
     }
 
     /**
