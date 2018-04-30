@@ -178,12 +178,10 @@ public class NetworkManager {
         NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.END_DATA_WITH); // send 354
 
         nextLine = netIn.nextLine(); // read in looking for encrypted header
-        boolean encrypted = false;
-        if (nextLine.contains(ProtocolConstants.ENCRYPTION_HEADER)) {
-            logln(nextLine);
-            encrypted = true;
-            nextLine = netIn.nextLine(); // read in first line of actual content
-        }
+        logln(nextLine);
+        boolean encrypted = nextLine.equals(ProtocolConstants.ENCRYPTION_HEADER); // set encrypted status
+
+        nextLine = netIn.nextLine(); // read in next
 
         // content length is unknown to us
         List<String> messageContents = new ArrayList<>();

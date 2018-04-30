@@ -75,6 +75,12 @@ public class ProtocolConstants {
     public static final String ENCRYPTION_HEADER = "_ENCRYPTED_";
 
     /**
+     * Body header that appears directly after first DATA header notifying remote that
+     * the message is _not_ encrypted
+     */
+    public static final String NO_ENCRYPT_HEADER = "NOT-ENCRYPTED";
+
+    /**
      * Shift to use for the caesar shift encryption
      */
     public static final int CAESAR_SHIFT_AMOUNT = 13;

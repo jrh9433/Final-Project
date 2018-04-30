@@ -177,6 +177,7 @@ public class MessageServer extends JFrame implements GUIResource {
     @Override
     public void onMailReceived(MailMessage mail) {
         SMTPMailMessage smtpMail = (SMTPMailMessage) mail;
+        boolean submittedToOutgoing = false;
 
         // determine where it needs to go
         for (String target : smtpMail.getSmtpRecipients()) {
@@ -198,9 +199,14 @@ public class MessageServer extends JFrame implements GUIResource {
                 queueProcessor.submitMessageToIncoming(userHost[0], mail);
                 continue;
             } else {
-                // if external, put in relay queue
-                queueProcessor.submitMessageToOutgoing(smtpMail);
-                continue;
+                // only submit to outgoing once
+                // it'll do its own loop to handle all recipients
+                if (!submittedToOutgoing) {
+                    // if external, put in relay queue
+                    submittedToOutgoing = true;
+                    queueProcessor.submitMessageToOutgoing(smtpMail);
+                    continue;
+                }
             }
         }
     }

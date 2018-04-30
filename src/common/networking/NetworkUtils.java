@@ -139,6 +139,8 @@ public class NetworkUtils {
         // this is the body, so if we're encrypted add our header
         if (mail.isEncrypted()) {
             dataContents.add(ProtocolConstants.ENCRYPTION_HEADER);
+        } else {
+            dataContents.add(ProtocolConstants.NO_ENCRYPT_HEADER);
         }
 
         dataContents.add("From: " + mail.getSender());
