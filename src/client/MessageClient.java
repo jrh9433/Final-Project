@@ -368,7 +368,6 @@ public class MessageClient extends JFrame implements GUIResource {
 
         doClearCompose();
         doClearInbox();
-        updateForDisconnect();
     }
 
     /**
@@ -403,7 +402,6 @@ public class MessageClient extends JFrame implements GUIResource {
     public void updateForDisconnect() {
         setActionsEnabled(false);
         this.loggedInUser = null;
-        this.workerThread = null;
         doClearInbox();
 
         loginDialog = new LoginDialog(this);
