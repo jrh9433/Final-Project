@@ -4,8 +4,11 @@ import common.Pair;
 import common.SharedWorkerThread;
 import common.message.MailMessage;
 import common.message.SMTPMailMessage;
+import common.networking.NetworkManager;
+import common.networking.ProtocolConstants;
 
 import java.io.*;
+import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -138,7 +141,7 @@ public class QueueProcessingThread extends Thread {
     private Queue readPendingQueue(String path) {
         File queueFile = new File(path);
         if (!queueFile.exists()) {
-            server.logln("Unable to load saved queue from: " + path);
+            // if it doesn't exist, we didn't save it
             return null;
         }
 
@@ -246,7 +249,30 @@ public class QueueProcessingThread extends Thread {
                 writeMessageToFile("logs/" + remoteHost, userName, message);
 
                 // attempt to relay to remotes
-                // todo
+                try {
+                    Socket remote = new Socket(remoteHost, ProtocolConstants.SERVER_DEFAULT_LISTEN_PORT);
+                    NetworkManager manager = new NetworkManager(server, remote);
+                    SharedWorkerThread worker = new SharedWorkerThread(server, manager);
+
+                    worker.setName("SharedWorkerThread : Queue : " + remoteHost);
+
+                    relayWorkers.add(worker);
+                    worker.start();
+
+                    worker.submitTask(() -> worker.sendOutgoingMessage(message));
+
+                    // give thread some time to init and send data
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ignored) {
+                    }
+
+                    worker.notifyRemoteToDisconnect();
+                    relayWorkers.remove(worker);
+                } catch (IOException ex) {
+                    server.logln("Queue Processor ran into an exception while relaying message to remote " + remoteHost + ": " + ex);
+                    ex.printStackTrace();
+                }
             }
 
             processed++;
