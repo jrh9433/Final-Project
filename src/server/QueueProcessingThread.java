@@ -200,14 +200,14 @@ public class QueueProcessingThread extends Thread {
             String userName = userMail.getKey();
             MailMessage message = userMail.getVal();
 
-            // log message to file
-            writeMessageToFile("logs/localServer", userName, message);
-
             // if we couldn't send the message (because the server connection thread hasn't been initialized yet)
             // just put the message back at the end of the queue, to be processed later
             boolean sent = server.relayMessageToLocalUser(userName, message);
             if (!sent) {
                 incomingQueue.add(userMail);
+            } else {
+                // if sent successfully, log message to file
+                writeMessageToFile("logs/localServer", userName, message);
             }
 
             processed++;
@@ -252,8 +252,14 @@ public class QueueProcessingThread extends Thread {
                 try {
                     Socket remote = new Socket(remoteHost, ProtocolConstants.SERVER_DEFAULT_LISTEN_PORT);
                     NetworkManager manager = new NetworkManager(server, remote);
-                    SharedWorkerThread worker = new SharedWorkerThread(server, manager);
+                    boolean login = manager.attemptLogin("server", "server"); // attempt to auth with groups agreed upon server/server login
 
+                    if (!login) {
+                        server.logln("Unable to authenticate with " + remoteHost + " to forward message for " + userName);
+                        continue;
+                    }
+
+                    SharedWorkerThread worker = new SharedWorkerThread(server, manager);
                     worker.setName("SharedWorkerThread : Queue : " + remoteHost);
 
                     relayWorkers.add(worker);
