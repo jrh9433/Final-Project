@@ -1,11 +1,13 @@
 package common.message;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  * Represents an email
  */
-public class MailMessage {
+public class MailMessage implements Serializable {
+    public static final long serialVersionUID = 100L;
 
     // Backing data storage
     private final List<String> toRecipients = new ArrayList<>();

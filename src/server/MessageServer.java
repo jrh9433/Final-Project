@@ -264,12 +264,21 @@ public class MessageServer extends JFrame implements GUIResource {
      *
      * @param username who to send the message to
      * @param msg      message to send
+     * @return whether we were able to successfully send the message or not
      */
-    public void relayMessageToLocalUser(String username, MailMessage msg) {
-        SharedWorkerThread target = connectionThread.connectedClients.get(username);
+    public boolean relayMessageToLocalUser(String username, MailMessage msg) {
+        if (connectionThread != null) {
+            SharedWorkerThread target = connectionThread.connectedClients.get(username);
 
-        if (target != null) {
-            target.submitTask(() -> target.sendOutgoingMessage(msg)); // sends message to their client);
+            if (target != null) {
+                target.submitTask(() -> target.sendOutgoingMessage(msg)); // sends message to their client;
+                return true;
+            } else {
+                // todo - better handling for this case
+                return false;
+            }
+        } else {
+            return false;
         }
     }
 

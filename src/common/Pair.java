@@ -1,12 +1,16 @@
 package common;
 
+import java.io.Serializable;
+
 /**
  * Immutable pair class for storing simple related values
  *
  * @param <K> Key data type
  * @param <V> Value data type
  */
-public class Pair<K, V> {
+public class Pair<K, V>  implements Serializable {
+    public static final long serialVersionUID = 100L;
+
     private final K key;
     private final V val;
 

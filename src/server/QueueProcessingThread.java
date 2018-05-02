@@ -15,6 +15,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Message queue management and processing thread
  */
 public class QueueProcessingThread extends Thread {
+
+    /**
+     * Save file path for the incoming queue
+     */
+    public static final String INCOMING_QUEUE_SAVE_PATH = "pending-incoming-queue.bin";
+
+    /**
+     * Save file path for the outgoing queue
+     */
+    public static final String OUTGOING_QUEUE_SAVE_PATH = "pending-outgoing-queue.bin";
+
     /**
      * Instance of the main server
      */
@@ -55,6 +66,7 @@ public class QueueProcessingThread extends Thread {
     public QueueProcessingThread(MessageServer server) {
         super("Incoming/Outgoing Queue Processing Thread");
         this.server = server;
+        loadPendingQueues();
         this.start();
     }
 
@@ -81,10 +93,91 @@ public class QueueProcessingThread extends Thread {
      * Cleans up and shuts down this thread
      */
     public void shutdown() {
-        running = true;
+        running = false;
 
         this.relayWorkers.forEach(c -> c.submitTask(c::notifyRemoteToDisconnect));
         this.relayWorkers.clear();
+
+        savePendingQueue(incomingQueue, INCOMING_QUEUE_SAVE_PATH);
+        savePendingQueue(outgoingQueue, OUTGOING_QUEUE_SAVE_PATH);
+    }
+
+    /**
+     * Writes a queue to disk when it has data still pending process
+     *
+     * @param queue queue to save
+     * @param path  where to save it
+     */
+    private void savePendingQueue(Queue queue, String path) {
+        if (queue.size() == 0) {
+            return;
+        }
+
+        File out = new File(path);
+        try {
+            if (!out.exists()) {
+                out.createNewFile();
+            }
+
+            ObjectOutputStream streamOut = new ObjectOutputStream(new FileOutputStream(out));
+            streamOut.writeObject(queue);
+            streamOut.flush();
+            streamOut.close();
+        } catch (IOException ex) {
+            server.logln("Server unable to save pending queue: " + ex);
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * Reads a saved queue from file, does not handle specific sub-types
+     *
+     * @param path path to read from
+     * @return An instance of a Queue or null
+     */
+    private Queue readPendingQueue(String path) {
+        File queueFile = new File(path);
+        if (!queueFile.exists()) {
+            server.logln("Unable to load saved queue from: " + path);
+            return null;
+        }
+
+        try {
+            ObjectInputStream streamIn = new ObjectInputStream(new FileInputStream(path));
+            Object object = streamIn.readObject();
+
+            if (!(object instanceof Queue)) {
+                server.logln("Unexpected pending queue type of class: " + object.getClass().getSimpleName());
+                return null;
+            }
+
+            streamIn.close();
+
+            return (Queue) object;
+        } catch (IOException | ClassNotFoundException ex) {
+            server.logln("Error reading pending queue at " + path + ": " + ex);
+            ex.printStackTrace();
+
+            return null;
+        }
+    }
+
+    /**
+     * Loads pending queues from file and initializes them for use
+     */
+    private void loadPendingQueues() {
+        Queue incomingQueue = readPendingQueue(INCOMING_QUEUE_SAVE_PATH);
+        Queue outgoingQueue = readPendingQueue(OUTGOING_QUEUE_SAVE_PATH);
+
+        if (incomingQueue != null) {
+            this.incomingQueue.addAll(incomingQueue);
+            server.logln("Loaded pending messages from incoming queue save file");
+        }
+
+        if (outgoingQueue != null) {
+            this.outgoingQueue.addAll(outgoingQueue);
+            server.logln("Loaded pending messages from outgoing queue save file");
+        }
     }
 
     /**
@@ -107,7 +200,12 @@ public class QueueProcessingThread extends Thread {
             // log message to file
             writeMessageToFile("logs/localServer", userName, message);
 
-            server.relayMessageToLocalUser(userName, message);
+            // if we couldn't send the message (because the server connection thread hasn't been initialized yet)
+            // just put the message back at the end of the queue, to be processed later
+            boolean sent = server.relayMessageToLocalUser(userName, message);
+            if (!sent) {
+                incomingQueue.add(userMail);
+            }
 
             processed++;
         }
