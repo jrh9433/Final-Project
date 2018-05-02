@@ -8,7 +8,7 @@ import java.io.Serializable;
  * @param <K> Key data type
  * @param <V> Value data type
  */
-public class Pair<K, V>  implements Serializable {
+public class Pair<K, V> implements Serializable {
     public static final long serialVersionUID = 100L;
 
     private final K key;

@@ -5,7 +5,6 @@ import common.message.SMTPMailMessage;
 import common.networking.NetworkManager;
 
 import java.io.IOException;
-import java.util.Scanner;
 import java.util.Vector;
 
 /**

@@ -26,7 +26,7 @@ public class MessageClient extends JFrame implements GUIResource {
      * Thread to use for common.networking, don't block the GUI thread when possible
      */
     protected SharedWorkerThread workerThread;
-    
+
     /**
      * Inbox JComboBox attributes
      */
@@ -43,7 +43,7 @@ public class MessageClient extends JFrame implements GUIResource {
     /**
      * Compose Components
      */
-     
+
     // North
     private JLabel jlFrom = new JLabel("From:                ");
     private JTextField jtfFrom = new JTextField(20);
@@ -52,7 +52,7 @@ public class MessageClient extends JFrame implements GUIResource {
     private JLabel jlCc = new JLabel("Cc:                    ");
     private JTextField jtfCc = new JTextField(20);
     private JLabel jlSubject = new JLabel("Subject:             ");
-    
+
     private JTextField jtfSubject = new JTextField(20);
     // Center
     private JLabel jlMessage = new JLabel("Message:");
@@ -65,7 +65,7 @@ public class MessageClient extends JFrame implements GUIResource {
     /**
      * Inbox Components
      */
-    
+
     // Main
     private JLabel jlFromInbox = new JLabel("From:    ");
     private JTextField jtfFromInbox = new JTextField(20);
@@ -79,7 +79,7 @@ public class MessageClient extends JFrame implements GUIResource {
     private JTextArea jtaMessageInbox = new JTextArea(8, 35);
     private JButton jbOpen = new JButton("Open");
     private JButton jbLogoutInbox = new JButton("Logout");
-    
+
     /**
      * Login dialog that pops-up and gets disposed and re-initialized
      */
@@ -112,7 +112,7 @@ public class MessageClient extends JFrame implements GUIResource {
         JPanel jpButtonsInbox = new JPanel();
         jpButtonsInbox.add(jbOpen);
         jpButtonsInbox.add(jbLogoutInbox);
-        
+
         JPanel jpFromInbox = new JPanel();
         jpFromInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
         jpFromInbox.add(jlFromInbox);
@@ -122,7 +122,7 @@ public class MessageClient extends JFrame implements GUIResource {
         jpToInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
         jpToInbox.add(jlToInbox);
         jpToInbox.add(jtfToInbox);
-        
+
         JPanel jpCcInbox = new JPanel();
         jpCcInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
         jpCcInbox.add(jlCcInbox);
@@ -136,7 +136,7 @@ public class MessageClient extends JFrame implements GUIResource {
         JPanel jpMessageInbox = new JPanel();
         jpMessageInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
         jpMessageInbox.add(jlMessageInbox);
-        
+
         // NORTH ... Labels + text fields
         JPanel jpNorthInbox = new JPanel(new GridLayout(5, 1));
         jpNorthInbox.add(jpFromInbox);
@@ -144,7 +144,7 @@ public class MessageClient extends JFrame implements GUIResource {
         jpNorthInbox.add(jpCcInbox);
         jpNorthInbox.add(jpSubjectInbox);
         jpNorthInbox.add(jpMessageInbox);
-        
+
         // CENTER ... Text area
         JPanel jpCenterInbox = new JPanel(new GridLayout(1, 1));
         jtaMessageInbox.setLineWrap(true);
@@ -245,7 +245,7 @@ public class MessageClient extends JFrame implements GUIResource {
     }
 
     /**
-     * Called on compose send. Ensures fields aren't empty then sends new MailMessage object 
+     * Called on compose send. Ensures fields aren't empty then sends new MailMessage object
      */
     private void validateAndSend() {
         SimpleDateFormat sdfDate = new SimpleDateFormat("MM/dd/yyyy");
@@ -325,6 +325,7 @@ public class MessageClient extends JFrame implements GUIResource {
 
         return validates;
     }
+
     /**
      * Called when a message is selected. Displays email contents
      */
@@ -350,6 +351,7 @@ public class MessageClient extends JFrame implements GUIResource {
             }
         }
     }
+
     /**
      * Called on logout. Clears inbox fields and mailbox vector
      */
@@ -363,6 +365,7 @@ public class MessageClient extends JFrame implements GUIResource {
         jtfSubjectInbox.setText("");
         jtaMessageInbox.setText("");
     }
+
     /**
      * Called on logout. Clears compose fields
      */
@@ -469,7 +472,7 @@ public class MessageClient extends JFrame implements GUIResource {
      * Used to update the client's state following a login attempt
      *
      * @param wasSuccess whether the login attempt was successful or rejected
-     * @param manager Null if rejected, instance of {@link NetworkManager} if accepted
+     * @param manager    Null if rejected, instance of {@link NetworkManager} if accepted
      */
     public void processLoginResponse(boolean wasSuccess, NetworkManager manager) {
         SwingUtilities.invokeLater(() -> { // sync back to GUI thread
