@@ -4,11 +4,8 @@ import common.Pair;
 import common.SharedWorkerThread;
 import common.message.MailMessage;
 import common.message.SMTPMailMessage;
-import common.networking.NetworkManager;
-import common.networking.ProtocolConstants;
 
 import java.io.*;
-import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -50,6 +47,11 @@ public class QueueProcessingThread extends Thread {
      */
     private boolean running = true;
 
+    /**
+     * Constructs a new QueueProcessingThread
+     *
+     * @param server instance of the running server
+     */
     public QueueProcessingThread(MessageServer server) {
         super("Incoming/Outgoing Queue Processing Thread");
         this.server = server;
@@ -137,6 +139,11 @@ public class QueueProcessingThread extends Thread {
                 // log message to file
                 String userName = userHost[0];
                 String remoteHost = userHost[1];
+
+                // don't send it locally, that has already been handled
+                if (server.isLocalServerAddress(remoteHost)) {
+                    continue;
+                }
 
                 writeMessageToFile("logs/" + remoteHost, userName, message);
 

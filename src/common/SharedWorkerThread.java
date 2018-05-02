@@ -91,6 +91,15 @@ public class SharedWorkerThread extends Thread {
         this.isConnected = false;
     }
 
+    /**
+     * Gets this worker's NetworkManager
+     *
+     * @return worker's NetworkManager
+     */
+    public NetworkManager getNetworkManager() {
+        return this.networkManager;
+    }
+
     @Override
     public void run() {
         initConnection();
@@ -127,16 +136,29 @@ public class SharedWorkerThread extends Thread {
      * @param message message to process
      */
     private void processIncomingData(String message) {
-        message = message.toUpperCase(); // normalize to uppercase
+        String command = message.toUpperCase(); // normalize to uppercase
 
-        if (message.startsWith("MAIL FROM")) {
+        if (command.startsWith("MAIL FROM")) {
             processIncomingMessage(message);
-        } else if (message.equals("QUIT")) {
+            return;
+        }
+
+        if (command.equals("QUIT")) {
             networkManager.receiveDisconnect(message);
             this.disconnect();
+            guiClient.updateServer(networkManager.getUser());
+            return;
         }
+
+        // sends 500 unknown if we get this far without processing data
+        networkManager.sendUnknownCommand();
     }
 
+    /**
+     * Handles processing an incoming message and notifying the proper elements
+     *
+     * @param message first line of SMTP MAIL FROM
+     */
     private void processIncomingMessage(String message) {
         SMTPMailMessage mail = networkManager.readRawIncomingMessage(message);
         guiClient.onMailReceived(mail);
@@ -148,7 +170,6 @@ public class SharedWorkerThread extends Thread {
     public void notifyRemoteToDisconnect() {
         networkManager.sendDisconnect();
         networkManager.closeConnections();
-        guiClient.updateServer(networkManager.getUser());
         this.disconnect();
     }
 

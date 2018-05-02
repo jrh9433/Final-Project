@@ -8,7 +8,6 @@ import java.util.*;
 public class MailMessage {
 
     // Backing data storage
-
     private final List<String> toRecipients = new ArrayList<>();
     private final List<String> ccRecipients = new ArrayList<>();
     private boolean encrypted;

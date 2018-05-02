@@ -23,6 +23,14 @@ public class SMTPMailMessage extends MailMessage {
      */
     private String[] smtpRecipients;
 
+    /**
+     * Constructs a new SMTPMailMessage
+     *
+     * @param encrypted       True if we originally received the message in an encrypted state
+     * @param smtpFrom        the SMTP sender
+     * @param smtpRecipients  the SMTP recipients
+     * @param messageContents the raw message body contents
+     */
     public SMTPMailMessage(boolean encrypted, String smtpFrom, String[] smtpRecipients, String[] messageContents) {
         super();
         setEncrypted(encrypted);
@@ -91,6 +99,13 @@ public class SMTPMailMessage extends MailMessage {
         setMessage(builder.toString());
     }
 
+    /**
+     * Gets all matches in a given String using the specified regex pattern
+     *
+     * @param source       String to search for matches
+     * @param regexPattern pattern to use to get matches
+     * @return array of strings containing all matches
+     */
     private String[] getAllMatches(String source, Pattern regexPattern) {
         List<String> matches = new ArrayList<>();
         Matcher matcher = regexPattern.matcher(source);

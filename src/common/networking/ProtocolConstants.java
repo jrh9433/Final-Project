@@ -44,6 +44,16 @@ public class ProtocolConstants {
     public static final int REQUEST_OKAY_CODE = 250;
 
     /**
+     * Sent by either side notifying the other of their intention to close the transmission
+     */
+    public static final int TRANSMISSION_END_CODE = 221;
+
+    /**
+     * Sent by the server to alert the remote that their command was not recognized
+     */
+    public static final String COMMAND_NOT_RECOGNIZED_ERR = "500  Syntax error, command unrecognized";
+
+    /**
      * Main message body data terminator
      */
     public static final String DATA_TERMINATOR = ".";

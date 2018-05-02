@@ -8,8 +8,6 @@ import java.net.Socket;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static common.networking.ProtocolConstants.MSG_DELIMITER;
-
 /**
  * Various static utils to make network handling easier
  */
@@ -82,7 +80,7 @@ public class NetworkUtils {
     public static void sendMessages(GUIResource gui, PrintWriter writer, boolean obfuscateLog, String... messages) {
         for (final String msg : messages) {
             gui.logln(obfuscateLog ? msg.replaceAll(".", "*") : msg);
-            writer.write(msg + MSG_DELIMITER);
+            writer.println(msg);
         }
 
         writer.flush();

@@ -55,6 +55,9 @@ public class MessageServer extends JFrame implements GUIResource {
      */
     private final JTextArea jtaLog = new JTextArea();
 
+    /**
+     * Processes mail queues to get messages to their recipients
+     */
     private final QueueProcessingThread queueProcessor = new QueueProcessingThread(this);
 
     /**
@@ -213,6 +216,13 @@ public class MessageServer extends JFrame implements GUIResource {
 
     @Override
     public void updateServer(String username) {
+        SharedWorkerThread clientWorker = connectionThread.connectedClients.get(username);
+        if (clientWorker == null) {
+            logln("Server attempted to remove a null client worker for: " + username);
+            return;
+        }
+
+        logln(username + ":" + clientWorker.getNetworkManager().getRemoteIP() + " has disconnected");
         this.connectionThread.connectedClients.remove(username);
     }
 
@@ -253,7 +263,7 @@ public class MessageServer extends JFrame implements GUIResource {
      * Relays a message to a locally connected client
      *
      * @param username who to send the message to
-     * @param msg message to send
+     * @param msg      message to send
      */
     public void relayMessageToLocalUser(String username, MailMessage msg) {
         SharedWorkerThread target = connectionThread.connectedClients.get(username);

@@ -89,6 +89,7 @@ public class NetworkManager {
      */
     public Pair<String, String> readIncomingLoginInfo() {
         String userName = netIn.nextLine();
+        this.username = userName;
         logln(userName);
 
         String password = netIn.nextLine();
@@ -207,6 +208,11 @@ public class NetworkManager {
         return new SMTPMailMessage(encrypted, smtpFrom, smptRecipients.toArray(new String[0]), messageContents.toArray(new String[0]));
     }
 
+    /**
+     * Initializes connections and creates the handshake
+     *
+     * @param isServer True if we're serving as the server
+     */
     public void initConnections(boolean isServer) {
         final String localHostName = getLocalHostname();
 
@@ -223,14 +229,29 @@ public class NetworkManager {
         }
     }
 
+    /**
+     * Notifies the remote of our intent to disconnect, then waits for their response
+     */
     public void sendDisconnect() {
         NetworkUtils.sendMessage(guiClient, netOut, "QUIT");
         logln(netIn.nextLine()); // 221
     }
 
+    /**
+     * Receives a remote's intent to disconnect via param, then responds to the remote
+     *
+     * @param message first line of already received SMTP QUIT
+     */
     public void receiveDisconnect(String message) {
         logln(message); // already read in QUIT
-        NetworkUtils.sendMessage(guiClient, netOut, "221 " + this.getLocalHostname() + " Service closing transmission channel");
+        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.TRANSMISSION_END_CODE + " " + this.getLocalHostname() + " Service closing transmission channel");
+    }
+
+    /**
+     * Alerts the remote that we are unable to process their command
+     */
+    public void sendUnknownCommand() {
+        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.COMMAND_NOT_RECOGNIZED_ERR);
     }
 
     /**
@@ -251,6 +272,11 @@ public class NetworkManager {
         return connection.getInetAddress().getHostName();
     }
 
+    /**
+     * Gets the IP address of the remote client
+     *
+     * @return remote IP
+     */
     public String getRemoteIP() {
         return connection.getInetAddress().getHostAddress();
     }
