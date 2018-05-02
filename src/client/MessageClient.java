@@ -26,11 +26,13 @@ public class MessageClient extends JFrame implements GUIResource {
      * Thread to use for common.networking, don't block the GUI thread when possible
      */
     protected SharedWorkerThread workerThread;
-
+    
+    /**
+     * Inbox JComboBox attributes
+     */
     Vector<MailMessage> mailList = new Vector<MailMessage>();
     List<String> mail = new ArrayList<String>();
     String[] mailString = mail.toArray(new String[mail.size()]);
-    boolean first = true;
     JComboBox<String> mailBox = new JComboBox<>(mailString);
 
     /**
@@ -41,6 +43,7 @@ public class MessageClient extends JFrame implements GUIResource {
     /**
      * Compose Components
      */
+     
     // North
     private JLabel jlFrom = new JLabel("From:                ");
     private JTextField jtfFrom = new JTextField(20);
@@ -49,6 +52,7 @@ public class MessageClient extends JFrame implements GUIResource {
     private JLabel jlCc = new JLabel("Cc:                    ");
     private JTextField jtfCc = new JTextField(20);
     private JLabel jlSubject = new JLabel("Subject:             ");
+    
     private JTextField jtfSubject = new JTextField(20);
     // Center
     private JLabel jlMessage = new JLabel("Message:");
@@ -61,6 +65,8 @@ public class MessageClient extends JFrame implements GUIResource {
     /**
      * Inbox Components
      */
+    
+    // Main
     private JLabel jlFromInbox = new JLabel("From:    ");
     private JTextField jtfFromInbox = new JTextField(20);
     private JLabel jlToInbox = new JLabel("To:        ");
@@ -73,6 +79,7 @@ public class MessageClient extends JFrame implements GUIResource {
     private JTextArea jtaMessageInbox = new JTextArea(8, 35);
     private JButton jbOpen = new JButton("Open");
     private JButton jbLogoutInbox = new JButton("Logout");
+    
     /**
      * Login dialog that pops-up and gets disposed and re-initialized
      */
@@ -129,19 +136,22 @@ public class MessageClient extends JFrame implements GUIResource {
         JPanel jpMessageInbox = new JPanel();
         jpMessageInbox.setLayout(new FlowLayout(FlowLayout.LEFT));
         jpMessageInbox.add(jlMessageInbox);
-
+        
+        // NORTH ... Labels + text fields
         JPanel jpNorthInbox = new JPanel(new GridLayout(5, 1));
         jpNorthInbox.add(jpFromInbox);
         jpNorthInbox.add(jpToInbox);
         jpNorthInbox.add(jpCcInbox);
         jpNorthInbox.add(jpSubjectInbox);
         jpNorthInbox.add(jpMessageInbox);
-
+        
+        // CENTER ... Text area
         JPanel jpCenterInbox = new JPanel(new GridLayout(1, 1));
         jtaMessageInbox.setLineWrap(true);
         jtaMessageInbox.setWrapStyleWord(true);
         jpCenterInbox.add(new JScrollPane(jtaMessageInbox));
 
+        // MAIN ... ComboBox + Buttons + North + Center
         JPanel jpInbox = new JPanel();
         jpInbox.add(jpMailList);
         jpInbox.add(jpButtonsInbox);
@@ -187,7 +197,7 @@ public class MessageClient extends JFrame implements GUIResource {
         jpSend.add(jcbEncrypt);
         jpSend.add(jbSend);
         jpSend.add(jbLogout);
-
+        // NORTH ... Labels + text fields
         JPanel jpNorth = new JPanel(new GridLayout(5, 1));
         jpNorth.add(jpFrom);
         jpNorth.add(jpTo);
@@ -195,7 +205,7 @@ public class MessageClient extends JFrame implements GUIResource {
         jpNorth.add(jpSubject);
         jpNorth.add(jpMessage);
 
-        // CENTER ... Label + text area
+        // CENTER ... text area + jpSend components
         JPanel jpCenter = new JPanel(new GridLayout(2, 1));
         jtaMessage.setLineWrap(true);
         jtaMessage.setWrapStyleWord(true);
@@ -234,7 +244,9 @@ public class MessageClient extends JFrame implements GUIResource {
         new MessageClient();
     }
 
-
+    /**
+     * Called on compose send. Ensures fields aren't empty then sends new MailMessage object 
+     */
     private void validateAndSend() {
         SimpleDateFormat sdfDate = new SimpleDateFormat("MM/dd/yyyy");
         Date date = new Date();
@@ -313,7 +325,9 @@ public class MessageClient extends JFrame implements GUIResource {
 
         return validates;
     }
-
+    /**
+     * Called when a message is selected. Displays email contents
+     */
     private void openMail() {
         String select = (String) mailBox.getSelectedItem();
         if (select.equals(String.format("%-75s", "Received Messages"))) {
@@ -336,7 +350,9 @@ public class MessageClient extends JFrame implements GUIResource {
             }
         }
     }
-
+    /**
+     * Called on logout. Clears inbox fields and mailbox vector
+     */
     private void doClearInbox() {
         mailList.clear();
         mail.clear();
@@ -347,7 +363,9 @@ public class MessageClient extends JFrame implements GUIResource {
         jtfSubjectInbox.setText("");
         jtaMessageInbox.setText("");
     }
-
+    /**
+     * Called on logout. Clears compose fields
+     */
     private void doClearCompose() {
         jtfFrom.setText("");
         jtfTo.setText("");
@@ -473,13 +491,17 @@ public class MessageClient extends JFrame implements GUIResource {
         });
     }
 
-    // called when a message is received
+    /**
+     * Called when a message is received. Adds mail message to inbox
+     *
+     * @param mailMessage object sent to client from server
+     */
     @Override
     public void onMailReceived(MailMessage mailMessage) {
         String from = mailMessage.getSender();
-        String subject = String.format("%.25s", mailMessage.getSubject());
+        String subject = String.format("%.25s", mailMessage.getSubject()); //limits subject in title to 25 characters
         String date = mailMessage.getDate();
-        String format = from + " " + subject + " " + date;
+        String format = from + " " + subject + " " + date; //format of JComboBox item title
 
         mailList.add(mailMessage);
         mail.add(format);
