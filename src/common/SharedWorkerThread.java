@@ -4,6 +4,7 @@ import common.message.MailMessage;
 import common.message.SMTPMailMessage;
 import common.networking.NetworkManager;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.util.Vector;
 
@@ -145,7 +146,12 @@ public class SharedWorkerThread extends Thread {
         if (command.equals("QUIT")) {
             networkManager.receiveDisconnect(message);
             this.disconnect();
-            guiClient.updateServer(networkManager.getUser());
+            guiClient.updateServerForUserDisconnect(networkManager.getUser());
+            return;
+        }
+
+        if (command.startsWith("500")) {
+            guiClient.showMessageDialog("Received Error Code 500 (Server unable to process command)", "Server Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
 

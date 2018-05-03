@@ -215,7 +215,7 @@ public class MessageServer extends JFrame implements GUIResource {
     }
 
     @Override
-    public void updateServer(String username) {
+    public void updateServerForUserDisconnect(String username) {
         SharedWorkerThread clientWorker = connectionThread.connectedClients.get(username);
         if (clientWorker == null) {
             logln("Server attempted to remove a null client worker for: " + username);

@@ -56,7 +56,7 @@ public interface GUIResource {
      *
      * @param username username's thread that has terminated
      */
-    default void updateServer(String username) {
+    default void updateServerForUserDisconnect(String username) {
     }
 
     /**
