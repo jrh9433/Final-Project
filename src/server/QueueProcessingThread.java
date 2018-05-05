@@ -300,7 +300,7 @@ public class QueueProcessingThread extends Thread {
         }
 
         // format current time to use as file name
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy.MM.dd-HH:mm:ss");
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss");
         LocalDateTime now = LocalDateTime.now();
         String currentTime = dtf.format(now);
 
