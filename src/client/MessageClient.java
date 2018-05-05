@@ -101,6 +101,11 @@ public class MessageClient extends JFrame implements GUIResource {
                 if (workerThread != null) {
                     workerThread.submitTask(workerThread::notifyRemoteToDisconnect);
                 }
+
+                // delay exit long enough to safely disconnect worker
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException ignored) {}
             }
         });
         JTabbedPane tabbedPane = new JTabbedPane();
