@@ -428,11 +428,6 @@ public class MessageClient extends JFrame implements GUIResource {
         loginDialog = new LoginDialog(this);
     }
 
-    @Override
-    public boolean isServer() {
-        return false;
-    }
-
     /**
      * Attempts to connect this client to the specified remote using the specified credentials
      * <p>
@@ -485,7 +480,7 @@ public class MessageClient extends JFrame implements GUIResource {
                     workerThread.haltThread();
                 }
 
-                workerThread = new SharedWorkerThread(this, manager);
+                workerThread = new SharedWorkerThread(this, manager, false); // false - act as a client
                 workerThread.start();
             } else {
                 loginDialog.jtfAttemptStatus.setText("Incorrect username/password");

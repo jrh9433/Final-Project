@@ -33,14 +33,6 @@ public interface GUIResource {
     }
 
     /**
-     * Gets whether the implementing class belongs to the server side of the application
-     * or the client side of the application.
-     *
-     * @return True, if server
-     */
-    boolean isServer();
-
-    /**
      * Called when the server sends a new message to the client. Use to update GUIs.
      */
     void onMailReceived(MailMessage mail);

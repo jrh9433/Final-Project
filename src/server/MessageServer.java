@@ -117,6 +117,11 @@ public class MessageServer extends JFrame implements GUIResource {
 
         // load saved data
         authenticationManager.loadSavedUserData(SAVED_USER_DATA_PATH);
+        // server user has been defined as the group-wide relay user, make sure it exists
+        if (!authenticationManager.isValidLogin("server", "server")) {
+            authenticationManager.addNewUser("server", "server");
+        }
+
         this.setVisible(true);
     }
 
@@ -170,11 +175,6 @@ public class MessageServer extends JFrame implements GUIResource {
     public synchronized void logln(String str) {
         GUIResource.super.logln(str);
         jtaLog.append(str + "\n");
-    }
-
-    @Override
-    public boolean isServer() {
-        return true;
     }
 
     @Override
@@ -386,7 +386,7 @@ public class MessageServer extends JFrame implements GUIResource {
                 NetworkManager manager = userConnection.getVal();
 
                 // spin up a client thread for the newly connected client
-                SharedWorkerThread client = new SharedWorkerThread(mainInstance, manager);
+                SharedWorkerThread client = new SharedWorkerThread(mainInstance, manager, true); // true - act as a server
                 connectedClients.put(username, client);
                 client.start();
             }

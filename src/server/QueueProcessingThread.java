@@ -259,7 +259,7 @@ public class QueueProcessingThread extends Thread {
                         continue;
                     }
 
-                    SharedWorkerThread worker = new SharedWorkerThread(server, manager);
+                    SharedWorkerThread worker = new SharedWorkerThread(server, manager, false); // false - act as a client
                     worker.setName("SharedWorkerThread : Queue : " + remoteHost);
 
                     relayWorkers.add(worker);
