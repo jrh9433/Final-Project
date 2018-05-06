@@ -247,7 +247,7 @@ public class UserManager {
          *
          * @param streamIn Stream to read from
          * @return a new User
-         * @throws IOException see {@link ObjectInputStream}
+         * @throws IOException            see {@link ObjectInputStream}
          * @throws ClassNotFoundException see {@link ObjectInputStream#readObject()}
          */
         public static User readFromStream(ObjectInputStream streamIn) throws IOException, ClassNotFoundException {

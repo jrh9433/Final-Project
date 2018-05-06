@@ -14,14 +14,14 @@ public class SMTPMailMessage extends MailMessage {
     /**
      * SMTP sender
      */
-    private String smtpFrom;
+    private final String smtpFrom;
 
     /**
      * SMTP recipients
      * <p>
      * Not necessarily the same as message to, cc, etc
      */
-    private String[] smtpRecipients;
+    private final String[] smtpRecipients;
 
     /**
      * Constructs a new SMTPMailMessage

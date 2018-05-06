@@ -33,7 +33,11 @@ public interface GUIResource {
     }
 
     /**
-     * Called when the server sends a new message to the client. Use to update GUIs.
+     * Called when either side receives a new message
+     * <p>
+     * The server uses this to handle routing incoming messages
+     * <p>
+     * The client uses this to display incoming messages
      */
     void onMailReceived(MailMessage mail);
 

@@ -99,7 +99,8 @@ public class MessageClient extends JFrame implements GUIResource {
                 // delay exit long enough to safely disconnect worker
                 try {
                     Thread.sleep(250);
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored) {
+                }
             }
         });
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -468,6 +469,7 @@ public class MessageClient extends JFrame implements GUIResource {
      *
      * @param wasSuccess whether the login attempt was successful or rejected
      * @param manager    Null if rejected, instance of {@link NetworkManager} if accepted
+     * @param dialog     Login dialog
      */
     public void processLoginResponse(boolean wasSuccess, NetworkManager manager, final LoginDialog dialog) {
         SwingUtilities.invokeLater(() -> { // sync back to GUI thread

@@ -41,11 +41,6 @@ class LoginDialog extends JDialog {
     private final JTextField jtfLoginPassword = new JPasswordField(10);
 
     /**
-     * Fields requiring some form of validation
-     */
-    private final JTextField[] fieldsToValidate = {jtfServerIp, jtfLoginUsername, jtfLoginPassword};
-
-    /**
      * Instance of the main MessageClient
      */
     private MessageClient messageClient;

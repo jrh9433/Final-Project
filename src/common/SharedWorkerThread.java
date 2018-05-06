@@ -18,7 +18,7 @@ import java.util.Vector;
 public class SharedWorkerThread extends Thread {
 
     /**
-     * Whether this is running on the server or the client
+     * Whether this is running as the server or the client
      */
     private final boolean isServer;
 
@@ -33,18 +33,18 @@ public class SharedWorkerThread extends Thread {
     private final Vector<Runnable> pendingTasks = new Vector<>();
 
     /**
+     * Provides access to GUI resources as well as allowing the thread to send messages
+     * to the implementing classes.
+     */
+    private final GUIResource guiClient;
+
+    /**
      * Loop control variable
      */
     private boolean isConnected = true;
 
     /**
-     * Provides access to GUI resources as well as allowing the thread to send messages
-     * to the implementing classes.
-     */
-    private GUIResource guiClient;
-
-    /**
-     * Creates a new common.AbstractWorkerThread
+     * Creates a new SharedWorkerThread
      *
      * @param guiClient Instance of a client
      * @param manager   Instance of NetworkManager
@@ -58,7 +58,7 @@ public class SharedWorkerThread extends Thread {
     }
 
     /**
-     * Returns true if this thread is running on the server
+     * Returns true if this thread is acting as a server thread
      *
      * @return True if server
      */
@@ -67,7 +67,7 @@ public class SharedWorkerThread extends Thread {
     }
 
     /**
-     * Returns true if this thread is running on the client
+     * Returns true if this thread is acting as a client thread
      *
      * @return True if client
      */
@@ -183,17 +183,6 @@ public class SharedWorkerThread extends Thread {
         networkManager.sendDisconnect();
         networkManager.closeConnections();
         this.disconnect();
-    }
-
-    /**
-     * Submits a task to this thread
-     * <p>
-     * The submitted task will be run by the client thread during the next iteration
-     *
-     * @param runnable task to be run
-     */
-    public synchronized void submitTask(Runnable runnable) {
-        pendingTasks.add(runnable);
     }
 
     /**

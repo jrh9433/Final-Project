@@ -36,7 +36,7 @@ class AddUserDialog extends JDialog {
     /**
      * Instance of the main server
      */
-    private MessageServer messageServer;
+    private final MessageServer messageServer;
 
     public AddUserDialog(MessageServer messageServer, MessageServer parent) {
         super(parent, "Add User", true);
