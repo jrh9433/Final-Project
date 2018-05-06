@@ -55,6 +55,7 @@ class LoginDialog extends JDialog {
         this.setTitle("Connect");
         this.setSize(250, 175);
         this.setLocation(messageClient.getCenteredPosition(messageClient, this));
+        this.setModal(true);
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -116,6 +117,6 @@ class LoginDialog extends JDialog {
         jtfAttemptStatus.setText("Authenticating...");
         jtfAttemptStatus.setVisible(true);
 
-        messageClient.attemptToConnect(host, port, username, password);
+        messageClient.attemptToConnect(host, port, username, password, this);
     }
 }

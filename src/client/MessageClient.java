@@ -81,12 +81,6 @@ public class MessageClient extends JFrame implements GUIResource {
     private JButton jbLogoutInbox = new JButton("Logout");
 
     /**
-     * Login dialog that pops-up and gets disposed and re-initialized
-     */
-    private LoginDialog loginDialog;
-    private int counter;
-
-    /**
      * Class entry
      */
     public MessageClient() {
@@ -430,7 +424,7 @@ public class MessageClient extends JFrame implements GUIResource {
         this.loggedInUser = null;
         doClearInbox();
 
-        loginDialog = new LoginDialog(this);
+        new LoginDialog(this);
     }
 
     /**
@@ -443,8 +437,9 @@ public class MessageClient extends JFrame implements GUIResource {
      * @param port     port to connect to it on
      * @param username user to identify as
      * @param password password used to authenticate as user
+     * @param dialog   login dialog
      */
-    public void attemptToConnect(String host, int port, String username, String password) {
+    public void attemptToConnect(String host, int port, String username, String password, LoginDialog dialog) {
         Socket connection;
         try {
             logln("Attempting to connect to " + host + ":" + port);
@@ -454,9 +449,9 @@ public class MessageClient extends JFrame implements GUIResource {
             boolean authSuccess = netManager.attemptLogin(username, password);
 
             if (authSuccess) {
-                processLoginResponse(true, netManager);
+                processLoginResponse(true, netManager, dialog);
             } else {
-                processLoginResponse(false, null); // on false no network params are used
+                processLoginResponse(false, null, dialog); // on false no network params are used
             }
         } catch (IOException ex) {
             String error = "Unable to connect to " + host + ":" + port;
@@ -464,7 +459,7 @@ public class MessageClient extends JFrame implements GUIResource {
             ex.printStackTrace();
 
             JOptionPane.showMessageDialog(this, error + ": " + ex, "Connection Error!", JOptionPane.ERROR_MESSAGE);
-            processLoginResponse(false, null);
+            processLoginResponse(false, null, dialog);
         }
     }
 
@@ -474,12 +469,11 @@ public class MessageClient extends JFrame implements GUIResource {
      * @param wasSuccess whether the login attempt was successful or rejected
      * @param manager    Null if rejected, instance of {@link NetworkManager} if accepted
      */
-    public void processLoginResponse(boolean wasSuccess, NetworkManager manager) {
+    public void processLoginResponse(boolean wasSuccess, NetworkManager manager, final LoginDialog dialog) {
         SwingUtilities.invokeLater(() -> { // sync back to GUI thread
             if (wasSuccess) {
-                onSuccessfulLogin(loginDialog.jtfLoginUsername.getText());
-                loginDialog.dispose();
-                loginDialog = null;
+                onSuccessfulLogin(dialog.jtfLoginUsername.getText());
+                dialog.dispose();
 
                 if (workerThread != null) {
                     workerThread.haltThread();
@@ -488,8 +482,8 @@ public class MessageClient extends JFrame implements GUIResource {
                 workerThread = new SharedWorkerThread(this, manager, false); // false - act as a client
                 workerThread.start();
             } else {
-                loginDialog.jtfAttemptStatus.setText("Incorrect username/password");
-                loginDialog.jbLogin.setEnabled(true);
+                dialog.jtfAttemptStatus.setText("Incorrect username/password");
+                dialog.jbLogin.setEnabled(true);
             }
         });
     }
