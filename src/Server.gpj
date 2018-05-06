@@ -12,14 +12,14 @@ s#i0
 s#k0
 s#j0
 s#l0
-!107;u
-a0	b4	c255	f%\011Server.jar	g%\011Server.zip	hManifest-Version\0111.0\011Main-Class\011server.MessageServer!77;g
+!108;u
+a0	b68	c255	f%\011Server.jar	g%\011Server.zip	hManifest-Version\0111.0\011Main-Class\011server.MessageServer!77;g
 %\011server%s
-%\011common%smessage%s
-%\011common%s
 %\011common%snetworking%s
+%\011common%s
+%\011common%smessage%s
 !77;f
 %\011server%s
-%\011common%smessage%s
-%\011common%s
 %\011common%snetworking%s
+%\011common%s
+%\011common%smessage%s

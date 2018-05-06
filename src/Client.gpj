@@ -13,13 +13,13 @@ s#k0
 s#j0
 s#l0
 !108;u
-a0	b68	c255	f%\011Client.jar	g%\011Client.zip	hManifest-Version\0111.0\011Main-Class\011client.MessageClient!77;g
-%\011common%smessage%s
-%\011common%s
-%\011client%s
+a0	b68	c127	f%\011Client.jar	g%\011Client.zip	hManifest-Version\0111.0\011Main-Class\011client.MessageClient!77;g
 %\011common%snetworking%s
+%\011common%s
+%\011common%smessage%s
+%\011client%s
 !77;f
-%\011common%smessage%s
-%\011common%s
-%\011client%s
 %\011common%snetworking%s
+%\011common%s
+%\011common%smessage%s
+%\011client%s
