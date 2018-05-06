@@ -84,7 +84,7 @@ class AddUserDialog extends JDialog {
             pass = "";
         }
 
-        messageServer.authenticationManager.addNewUser(username, pass);
+        messageServer.userManager.addNewUser(username, pass);
         messageServer.logln("Added user: " + username);
         this.dispose();
     }

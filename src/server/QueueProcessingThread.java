@@ -98,7 +98,7 @@ public class QueueProcessingThread extends Thread {
     public void shutdown() {
         running = false;
 
-        this.relayWorkers.forEach(c -> c.submitTask(c::notifyRemoteToDisconnect));
+        this.relayWorkers.forEach(SharedWorkerThread::scheduleDisconnect);
         this.relayWorkers.clear();
 
         savePendingQueue(incomingQueue, INCOMING_QUEUE_SAVE_PATH);
@@ -265,7 +265,7 @@ public class QueueProcessingThread extends Thread {
                     relayWorkers.add(worker);
                     worker.start();
 
-                    worker.submitTask(() -> worker.sendOutgoingMessage(message));
+                    worker.scheduleMessageSend(message);
 
                     // give thread some time to init and send data
                     try {
@@ -273,7 +273,7 @@ public class QueueProcessingThread extends Thread {
                     } catch (InterruptedException ignored) {
                     }
 
-                    worker.notifyRemoteToDisconnect();
+                    worker.scheduleDisconnect();
                     relayWorkers.remove(worker);
                 } catch (IOException ex) {
                     server.logln("Queue Processor ran into an exception while relaying message to remote " + remoteHost + ": " + ex);

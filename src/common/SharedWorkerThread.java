@@ -170,9 +170,16 @@ public class SharedWorkerThread extends Thread {
     }
 
     /**
-     * Notifies the remote to disconnect gracefully
+     * Schedules a safe disconnection, notifying the remote and then disconnecting
      */
-    public void notifyRemoteToDisconnect() {
+    public void scheduleDisconnect() {
+        this.pendingTasks.add(this::notifyAndDisconnect);
+    }
+
+    /**
+     * Notifies the remote of the disconnection then disconnects and updates as needed
+     */
+    private void notifyAndDisconnect() {
         networkManager.sendDisconnect();
         networkManager.closeConnections();
         this.disconnect();
@@ -217,11 +224,11 @@ public class SharedWorkerThread extends Thread {
     }
 
     /**
-     * Called when the client wants to send a message
+     * Schedules an outgoing message to be sent
      *
-     * @param mail mail to send
+     * @param mail message to send
      */
-    public void sendOutgoingMessage(MailMessage mail) {
+    public void scheduleMessageSend(MailMessage mail) {
         final String from = mail.getSender();
         if (from == null || from.equals("")) {
             throw new IllegalArgumentException("Cannot send a message with no from address!");
@@ -234,6 +241,15 @@ public class SharedWorkerThread extends Thread {
             throw new IllegalArgumentException("Cannot send a message without any recipients!");
         }
 
+        this.pendingTasks.add(() -> sendMessage(mail));
+    }
+
+    /**
+     * Called when the client wants to send a message
+     *
+     * @param mail mail to send
+     */
+    private void sendMessage(MailMessage mail) {
         networkManager.sendOutgoingMessage(mail);
     }
 }

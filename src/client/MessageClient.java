@@ -99,7 +99,7 @@ public class MessageClient extends JFrame implements GUIResource {
             @Override
             public void windowClosing(WindowEvent e) {
                 if (workerThread != null) {
-                    workerThread.submitTask(workerThread::notifyRemoteToDisconnect);
+                    workerThread.scheduleDisconnect();
                 }
 
                 // delay exit long enough to safely disconnect worker
@@ -309,7 +309,7 @@ public class MessageClient extends JFrame implements GUIResource {
         );
 
         doClearCompose();
-        workerThread.submitTask(() -> workerThread.sendOutgoingMessage(message));
+        workerThread.scheduleMessageSend(message);
         showMessageDialog("Your mail has been sent to the server!", "Message Sent", 1);
     }
 
@@ -390,7 +390,7 @@ public class MessageClient extends JFrame implements GUIResource {
      * and a new login window is displayed
      */
     private void logout() {
-        workerThread.submitTask(() -> workerThread.notifyRemoteToDisconnect());
+        workerThread.scheduleDisconnect();
 
         doClearCompose();
         doClearInbox();

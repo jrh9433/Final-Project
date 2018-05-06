@@ -28,7 +28,7 @@ public class MessageServer extends JFrame implements GUIResource {
     /**
      * Manages users, passwords, and their data
      */
-    protected final AuthenticationManager authenticationManager = new AuthenticationManager(this);
+    protected final UserManager userManager = new UserManager(this);
 
     /**
      * Starts the server
@@ -87,7 +87,7 @@ public class MessageServer extends JFrame implements GUIResource {
                     connectionThread.stopListening();
                 }
 
-                authenticationManager.writeUserData(SAVED_USER_DATA_PATH);
+                userManager.writeUserData(SAVED_USER_DATA_PATH);
                 queueProcessor.shutdown();
             }
         });
@@ -116,10 +116,10 @@ public class MessageServer extends JFrame implements GUIResource {
         this.add(new JScrollPane(jtaLog), BorderLayout.CENTER);
 
         // load saved data
-        authenticationManager.loadSavedUserData(SAVED_USER_DATA_PATH);
+        userManager.loadSavedUserData(SAVED_USER_DATA_PATH);
         // server user has been defined as the group-wide relay user, make sure it exists
-        if (!authenticationManager.isValidLogin("server", "server")) {
-            authenticationManager.addNewUser("server", "server");
+        if (!userManager.isValidLogin("server", "server")) {
+            userManager.addNewUser("server", "server");
         }
 
         this.setVisible(true);
@@ -264,22 +264,27 @@ public class MessageServer extends JFrame implements GUIResource {
      *
      * @param username who to send the message to
      * @param msg      message to send
-     * @return whether we were able to successfully send the message or not
+     * @return whether we were able to successfully handle the message or not
      */
     public boolean relayMessageToLocalUser(String username, MailMessage msg) {
+        UserManager.User user = userManager.getUser(username);
+        if (user == null) {
+            return false; // user does not exist - no way for us to handle at this time
+        }
+
+        // put message in user inbox
+        user.putInInbox(msg);
+
+        // relay to user immediately if connected
         if (connectionThread != null) {
             SharedWorkerThread target = connectionThread.connectedClients.get(username);
-
             if (target != null) {
-                target.submitTask(() -> target.sendOutgoingMessage(msg)); // sends message to their client;
-                return true;
-            } else {
-                // todo - better handling for this case
-                return false;
+                target.scheduleMessageSend(msg);
             }
-        } else {
-            return false;
         }
+
+        return true;
+
     }
 
     /**
@@ -338,7 +343,7 @@ public class MessageServer extends JFrame implements GUIResource {
             listening = false;
 
             // thread safety, submit disconnect actions to the threads to be executed by the threads
-            connectedClients.values().forEach(c -> c.submitTask(c::notifyRemoteToDisconnect));
+            connectedClients.values().forEach(SharedWorkerThread::scheduleDisconnect);
             connectedClients.clear();
 
             try {
@@ -389,6 +394,18 @@ public class MessageServer extends JFrame implements GUIResource {
                 SharedWorkerThread client = new SharedWorkerThread(mainInstance, manager, true); // true - act as a server
                 connectedClients.put(username, client);
                 client.start();
+
+                // send user their inbox
+                UserManager.User user = userManager.getUser(username);
+                if (user == null) {
+                    // shouldn't ever happen by the time the code reaches this point, but who knows \o/
+                    logln("Unable to send user their saved inbox - They no longer exist post-auth?: " + username);
+                    continue;
+                }
+
+                for (MailMessage message : user.getAllInboxMessages()) {
+                    client.scheduleMessageSend(message);
+                }
             }
         }
 
@@ -418,7 +435,7 @@ public class MessageServer extends JFrame implements GUIResource {
 
             // authenticate only if we have security enabled, else just let everyone be whoever
             boolean securityOverride = !jcbSecurity.isSelected();
-            if (securityOverride || authenticationManager.isValidLogin(username, password)) {
+            if (securityOverride || userManager.isValidLogin(username, password)) {
                 netManager.notifyLoginSuccess();
 
                 logln(remoteHostname + " authenticated as " + username);

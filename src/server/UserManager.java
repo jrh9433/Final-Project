@@ -1,16 +1,16 @@
 package server;
 
 import common.GUIResource;
+import common.message.MailMessage;
 
 import java.io.*;
 import java.security.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
- * Manages user login information
+ * Manages user information
  */
-public class AuthenticationManager {
+public class UserManager {
 
     /**
      * All managed users
@@ -27,7 +27,7 @@ public class AuthenticationManager {
      *
      * @param guiResource instance of the server
      */
-    public AuthenticationManager(GUIResource guiResource) {
+    public UserManager(GUIResource guiResource) {
         this.gui = guiResource;
 
         // verify both our security algorithms exist immediately
@@ -56,6 +56,16 @@ public class AuthenticationManager {
     }
 
     /**
+     * Gets a user by username
+     *
+     * @param username name to lookup user
+     * @return Null, or user if they exist
+     */
+    public User getUser(String username) {
+        return this.managedUsers.get(username);
+    }
+
+    /**
      * Attempts to load saved data from file
      *
      * @param saveFilePath path to read data from
@@ -65,13 +75,13 @@ public class AuthenticationManager {
             return;
         }
 
-        try (DataInputStream streamIn = new DataInputStream(new FileInputStream(new File(saveFilePath)))) {
+        try (ObjectInputStream streamIn = new ObjectInputStream(new FileInputStream(new File(saveFilePath)))) {
             while (streamIn.available() > 0) {
                 User user = User.readFromStream(streamIn);
                 managedUsers.put(user.username, user);
                 gui.logln("Loaded saved user: " + user.username);
             }
-        } catch (IOException ex) {
+        } catch (IOException | ClassNotFoundException ex) {
             gui.logln("Error reading saved user data: " + ex);
             ex.printStackTrace();
         }
@@ -87,7 +97,7 @@ public class AuthenticationManager {
             return; // don't save an empty file if we have no data
         }
 
-        try (DataOutputStream streamOut = new DataOutputStream(new FileOutputStream(new File(saveFilePath)))) {
+        try (ObjectOutputStream streamOut = new ObjectOutputStream(new FileOutputStream(new File(saveFilePath)))) {
             for (User user : managedUsers.values()) {
                 user.writeToStream(streamOut);
             }
@@ -215,6 +225,11 @@ public class AuthenticationManager {
         private final byte[] passSalt;
 
         /**
+         * User's inbox
+         */
+        private final Vector<MailMessage> inbox = new Vector<>();
+
+        /**
          * Constructs a new User
          *
          * @param usernameIn name to identify the user with
@@ -232,9 +247,10 @@ public class AuthenticationManager {
          *
          * @param streamIn Stream to read from
          * @return a new User
-         * @throws IOException see {@link DataInputStream}
+         * @throws IOException see {@link ObjectInputStream}
+         * @throws ClassNotFoundException see {@link ObjectInputStream#readObject()}
          */
-        public static User readFromStream(DataInputStream streamIn) throws IOException {
+        public static User readFromStream(ObjectInputStream streamIn) throws IOException, ClassNotFoundException {
             String username = streamIn.readUTF();
             String passHash = streamIn.readUTF();
             int saltLength = streamIn.readInt();
@@ -244,7 +260,22 @@ public class AuthenticationManager {
                 passSalt[i] = streamIn.readByte();
             }
 
-            return new User(username, passSalt, passHash);
+            User user = new User(username, passSalt, passHash);
+
+            // read in saved inbox
+            int messageCount = streamIn.readInt();
+            for (int i = 0; i < messageCount; i++) {
+                Object msgObj = streamIn.readObject();
+
+                if (!(msgObj instanceof MailMessage)) {
+                    System.out.println("Unexpected class type while loading inbox of: " + username + ": " + msgObj.getClass().getSimpleName());
+                    continue;
+                }
+
+                user.inbox.add((MailMessage) msgObj);
+            }
+
+            return user;
         }
 
         /**
@@ -275,18 +306,42 @@ public class AuthenticationManager {
         }
 
         /**
+         * Puts a message into the user's inbox
+         *
+         * @param message mail to put in inbox
+         */
+        public final void putInInbox(MailMessage message) {
+            this.inbox.add(message);
+        }
+
+        /**
+         * Gets all messages in the user's inbox
+         *
+         * @return array of messages in the user's inbox
+         */
+        public final MailMessage[] getAllInboxMessages() {
+            return this.inbox.toArray(new MailMessage[0]);
+        }
+
+        /**
          * Writes this user to the DataStream
          *
          * @param streamOut Stream to write the user to
-         * @throws IOException see {@link DataOutputStream}
+         * @throws IOException see {@link ObjectOutputStream}
          */
-        public void writeToStream(DataOutputStream streamOut) throws IOException {
+        public void writeToStream(ObjectOutputStream streamOut) throws IOException {
             streamOut.writeUTF(username);
             streamOut.writeUTF(passHash);
             streamOut.writeInt(passSalt.length);
 
             for (byte bite : this.passSalt) {
                 streamOut.writeByte(bite);
+            }
+
+            // write inbox messages
+            streamOut.writeInt(inbox.size());
+            for (MailMessage message : this.inbox) {
+                streamOut.writeObject(message);
             }
         }
     }
