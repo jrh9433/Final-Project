@@ -16,22 +16,22 @@ public class NetworkManager {
     /**
      * An instance of the server or client to use for logging
      */
-    protected final GUIResource guiClient;
+    private final GUIResource guiClient;
 
     /**
      * The socket providing the connection
      */
-    protected final Socket connection;
+    private final Socket connection;
 
     /**
      * The writer we use to send strings to the remote
      */
-    protected final PrintWriter netOut;
+    private final PrintWriter netOut;
 
     /**
      * The scanner we use to read incoming data from the remote
      */
-    protected final Scanner netIn;
+    private final Scanner netIn;
 
     /**
      * Raw incoming data stream used to check available without blocking
@@ -68,8 +68,8 @@ public class NetworkManager {
      * @return True if login successful, false if failure
      */
     public boolean attemptLogin(String username, String password) {
-        NetworkUtils.sendMessage(guiClient, netOut, username);
-        NetworkUtils.sendMessages(guiClient, netOut, true, password); // flag obfuscates log to hide password
+        this.sendMessage(username);
+        this.sendMessages(true, password); // flag obfuscates log to hide password
 
         String response = netIn.nextLine();
         logln(response);
@@ -102,7 +102,7 @@ public class NetworkManager {
      * Notifies the remote that the login failed
      */
     public void notifyLoginFailed() {
-        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.LOGIN_REJECTED);
+        this.sendMessage(ProtocolConstants.LOGIN_REJECTED);
         this.closeConnections();
     }
 
@@ -110,7 +110,7 @@ public class NetworkManager {
      * Notifies the remote that the login was a success
      */
     public void notifyLoginSuccess() {
-        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.LOGIN_SUCCESS);
+        this.sendMessage(ProtocolConstants.LOGIN_SUCCESS);
     }
 
     /**
@@ -123,22 +123,22 @@ public class NetworkManager {
         String[] smtpRecipients = NetworkUtils.getSmtpRecipients(mail.getTo(), mail.getCC());
         String[] messageContents = NetworkUtils.formatMailContentsForSend(mail);
 
-        NetworkUtils.sendMessage(guiClient, netOut, smtpFrom);
+        this.sendMessage(smtpFrom);
         logln(netIn.nextLine()); // 250 server OK
 
         for (String recipient : smtpRecipients) {
-            NetworkUtils.sendMessage(guiClient, netOut, recipient);
+            this.sendMessage(recipient);
             logln(netIn.nextLine()); // 250 server OK
         }
 
-        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.DATA_HEADER);
+        this.sendMessage(ProtocolConstants.DATA_HEADER);
         logln(netIn.nextLine()); // server 354
 
-        for (String string : messageContents) {
-            NetworkUtils.sendMessage(guiClient, netOut, string);
+        for (String contentLine : messageContents) {
+            this.sendMessage(contentLine);
         }
 
-        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.DATA_TERMINATOR);
+        this.sendMessage(ProtocolConstants.DATA_TERMINATOR);
         logln(netIn.nextLine()); // server 250, w/ queue
     }
 
@@ -154,7 +154,7 @@ public class NetworkManager {
         logln(firstLine);
 
         final String okay250 = ProtocolConstants.REQUEST_OKAY_CODE + " OK";
-        NetworkUtils.sendMessage(guiClient, netOut, okay250); // send 250
+        this.sendMessage(okay250); // send 250
 
         // there can be a variable number of smtp recipients
         List<String> smptRecipients = new ArrayList<>();
@@ -168,7 +168,7 @@ public class NetworkManager {
                 smptRecipients.add(smptRecip);
             }
 
-            NetworkUtils.sendMessage(guiClient, netOut, okay250);
+            this.sendMessage(okay250);
             nextLine = netIn.nextLine();
         }
 
@@ -176,7 +176,7 @@ public class NetworkManager {
         // that one line extra is the DATA header
 
         logln(nextLine); // don't re-read, DATA
-        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.END_DATA_WITH); // send 354
+        this.sendMessage(ProtocolConstants.END_DATA_WITH); // send 354
 
         nextLine = netIn.nextLine(); // read in looking for encrypted header
         logln(nextLine);
@@ -197,7 +197,7 @@ public class NetworkManager {
         // all we need to do is send OK and its queue position
         logln(nextLine);
 
-        NetworkUtils.sendMessage(guiClient, netOut, okay250);
+        this.sendMessage(okay250);
 
         // decrypt contents before passing around internally
         if (encrypted) {
@@ -217,14 +217,14 @@ public class NetworkManager {
         final String localHostName = getLocalHostname();
 
         if (isServer) {
-            NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.INIT_HELLO_CODE + " " + localHostName + " ESMTP");
+            this.sendMessage(ProtocolConstants.INIT_HELLO_CODE + " " + localHostName + " ESMTP");
             logln(netIn.nextLine()); // client responds with HELO and its host
 
             String remoteHostname = getRemoteHostname();
-            NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.REQUEST_OKAY_CODE + " Hello " + remoteHostname + ", I am glad to meet you");
+            this.sendMessage(ProtocolConstants.REQUEST_OKAY_CODE + " Hello " + remoteHostname + ", I am glad to meet you");
         } else {
             logln(netIn.nextLine()); // server sends its own init and host
-            NetworkUtils.sendMessage(guiClient, netOut, "HELO " + localHostName);
+            this.sendMessage("HELO " + localHostName);
             logln(netIn.nextLine()); // server sends ack
         }
     }
@@ -233,7 +233,7 @@ public class NetworkManager {
      * Notifies the remote of our intent to disconnect, then waits for their response
      */
     public void sendDisconnect() {
-        NetworkUtils.sendMessage(guiClient, netOut, "QUIT");
+        this.sendMessage("QUIT");
         logln(netIn.nextLine()); // 221
     }
 
@@ -244,14 +244,14 @@ public class NetworkManager {
      */
     public void receiveDisconnect(String message) {
         logln(message); // already read in QUIT
-        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.TRANSMISSION_END_CODE + " " + this.getLocalHostname() + " Service closing transmission channel");
+        this.sendMessage(ProtocolConstants.TRANSMISSION_END_CODE + " " + this.getLocalHostname() + " Service closing transmission channel");
     }
 
     /**
      * Alerts the remote that we are unable to process their command
      */
     public void sendUnknownCommand() {
-        NetworkUtils.sendMessage(guiClient, netOut, ProtocolConstants.COMMAND_NOT_RECOGNIZED_ERR);
+        this.sendMessage(ProtocolConstants.COMMAND_NOT_RECOGNIZED_ERR);
     }
 
     /**
@@ -295,7 +295,7 @@ public class NetworkManager {
      *
      * @param msg message to log
      */
-    protected void logln(String msg) {
+    private void logln(String msg) {
         guiClient.logln(msg);
     }
 
@@ -329,5 +329,31 @@ public class NetworkManager {
      */
     public String rawRead() {
         return netIn.hasNextLine() ? netIn.nextLine() : null;
+    }
+
+    /**
+     * Sends a network message to the remote
+     * <p>
+     * SMTP is a message based protocol
+     *
+     * @param message message contents
+     */
+    private void sendMessage(String message) {
+        sendMessages(false, message);
+    }
+
+    /**
+     * Writes multiple network messages in succession without waiting
+     *
+     * @param obfuscateLog True to obfuscate the contents of the messages in the log
+     * @param messages     messages to send
+     */
+    private void sendMessages(boolean obfuscateLog, String... messages) {
+        for (final String msg : messages) {
+            guiClient.logln(obfuscateLog ? msg.replaceAll(".", "*") : msg);
+            netOut.println(msg);
+        }
+
+        netOut.flush();
     }
 }

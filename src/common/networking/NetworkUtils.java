@@ -1,6 +1,5 @@
 package common.networking;
 
-import common.GUIResource;
 import common.message.MailMessage;
 
 import java.io.*;
@@ -38,52 +37,6 @@ public class NetworkUtils {
      */
     public static PrintWriter getNewOutputWriter(Socket remote) throws IOException {
         return new PrintWriter(new OutputStreamWriter(remote.getOutputStream(), ProtocolConstants.DEFAULT_CHARSET));
-    }
-
-    ////
-    // Data Transfer methods
-    ////
-
-    /**
-     * Sends a network message to the remote
-     * <p>
-     * SMTP is a message based protocol
-     *
-     * @param gui     client gui to log to
-     * @param writer  writer to send data with
-     * @param message message contents
-     */
-    public static void sendMessage(GUIResource gui, PrintWriter writer, String message) {
-        sendMessages(gui, writer, message);
-    }
-
-    /**
-     * Sends multiple network messages in succession without waiting
-     *
-     * @param gui      client to log to
-     * @param writer   writer to send data with
-     * @param messages messages to send
-     */
-    public static void sendMessages(GUIResource gui, PrintWriter writer, String... messages) {
-        sendMessages(gui, writer, false, messages);
-    }
-
-
-    /**
-     * Writes multiple network messages in succession without waiting
-     *
-     * @param gui          client gui to log to
-     * @param writer       writer to send data with
-     * @param obfuscateLog True to obfuscate the contents of the messages in the log
-     * @param messages     messages to send
-     */
-    public static void sendMessages(GUIResource gui, PrintWriter writer, boolean obfuscateLog, String... messages) {
-        for (final String msg : messages) {
-            gui.logln(obfuscateLog ? msg.replaceAll(".", "*") : msg);
-            writer.println(msg);
-        }
-
-        writer.flush();
     }
 
     ////
